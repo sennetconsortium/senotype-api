@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# Exclude virtual environments
+env/
+venv/
+
+# Exclude configuration files
+src/instance
+*.cfg
+
+# Docker
+docker/
+.dockerignore
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+*.md
+pyproject.toml
+.flake8

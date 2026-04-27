@@ -1,0 +1,31 @@
+services:
+  senotype-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        HOST_UID: ${HOST_UID:-1002}
+        HOST_GID: ${HOST_GID:-1002}
+    container_name: senotype-api
+    hostname: senotype-api
+    image: sennet/senotype-api:${VERSION}
+    restart: unless-stopped
+    platform: linux/amd64
+    init: true
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5010/status"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      # Mount the app config to container in order to keep it outside of the image
+      - "../src/instance/app.cfg:/usr/src/app/src/instance/app.cfg:ro"
+    ports:
+      - "5010:5010"
+    networks:
+      - sennet_docker_network
+
+networks:
+  sennet_docker_network:
+    external: true

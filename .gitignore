@@ -1,0 +1,14 @@
+# Python
+env/
+venv/
+__pycache__/
+
+# Config
+*.cfg
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+notes*

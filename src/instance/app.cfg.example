@@ -1,0 +1,24 @@
+# flask app configuration
+LOG_LEVEL = "DEBUG"
+SECRET_KEY = "super-secret-key"
+
+# custom configuration for the app
+GLOBUS_APP_CLIENT_ID = "client_id"
+GLOBUS_APP_CLIENT_SECRET = "client_secret"
+
+MONGO_HOST = "mongo.example.com"
+MONGO_DB_NAME = "mongo_db"
+MONGO_USERNAME = "mongo_user"
+MONGO_PASSWORD = "mongo_password"
+
+GLOBUS_GROUP_UUIDS = {
+    "data-admin": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
+    "senotype-edit": "b1c2d3e4-5678-90ab-cdef-1234567890ab",
+}
+
+SEARCH_API_URL = "https://search-api.dev.sennetconsortium.org"
+UUID_API_URL = "https://uuid-api.dev.sennetconsortium.org"
+ENTITY_API_URL = "https://entity-api.dev.sennetconsortium.org"
+UBKG_API_URL = "https://ontology-api.dev.hubmapconsortium.org"
+EUTILS_API_URL = "https://eutils.ncbi.nlm.nih.gov"
+SCICRUNCH_API_URL = "https://scicrunch.org"
