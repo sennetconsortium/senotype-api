@@ -48,6 +48,7 @@ def configure_services(app: Flask, config: AppConfig):
         password=config.MONGO_PASSWORD.get_secret_value(),
         authSource=config.MONGO_DB_NAME,
     )
+    mongo_client.admin.command("ping")
     app.extensions["mongo_db"] = mongo_client[config.MONGO_DB_NAME]
     atexit.register(mongo_client.close)
 

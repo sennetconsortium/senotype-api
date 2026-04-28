@@ -23,8 +23,17 @@ usage() {
 
 case "$COMMAND" in
   build)
-    docker compose -f docker/docker-compose.yml build
-    echo "Built image version $VERSION"
+    if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
+      echo "Unknown deployment environment '$ENV', specify one of the following: dev|prod"
+    fi
+    case "$ENV" in
+      prod)
+        docker compose -f docker/docker-compose.yml build --no-cache
+        ;;
+      dev)
+        docker compose -f docker/docker-compose.yml -f docker/docker-compose.development.yml build --no-cache
+        ;;
+    esac
     ;;
   start)
     if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
