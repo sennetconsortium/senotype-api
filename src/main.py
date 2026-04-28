@@ -92,7 +92,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     app = create_app()
-    try:
-        app.run(host="0.0.0.0", port=args.port, debug=args.debug)
-    except Exception as e:
-        app.logger.error(f"Error starting Flask app: {e}")
+    app.run(host="0.0.0.0", port=args.port, debug=args.debug, use_reloader=False)
