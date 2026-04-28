@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  description: "The SenNet Senotype API is a RESTful web service with create, read, update, and delete operations for the SenNet senotype data."
+  title: Senotype API
+  version: 1.0.0
+  contact:
+    name: SenNet Help Desk
+    email: help@sennetconsortium.org
+  license:
+    name: MIT License
+    url: "https://github.com/sennetconsortium/entity-api/blob/main/license.txt"
+servers:
+  - url: "https://senotype.api.sennetconsortium.org"
+
+paths:
+  /senotypes:
+    post:
+      summary: Create a senotype
+      operationId: createSenotype
+      description: >
+        Requires the authenticated user to be a member of the
+        `senotype-edit` Globus group.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSenotypeRequest"
+      responses:
+        "201":
+          description: Senotype created successfully
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /senotypes/{uuid}:
+    put:
+      summary: Update a senotype
+      operationId: updateSenotype
+      description: >
+        Requires the authenticated user to be a member of the
+        `senotype-edit` Globus group. The user must also be the
+        original creator of the senotype.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-f0-9]{32}$"
+            example: 73df6847495fcd61e4b6e5292ab2c9dc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSenotypeRequest"
+      responses:
+        "200":
+          description: Senotype updated successfully
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Globus groups bearer token. For write operations (POST, PUT, DELETE),
+        the token must belong to a user who is a member of the
+        `senotype-edit` Globus group.
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+            example:
+              errors:
+                taxon: ["Valueset 'NCBI:9999' not found in valuesets"]
+                organ: ["Organ 'UBERON:0000000' not found in UBKG"]
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    BMI:
+      type: object
+      required:
+        - value
+        - unit
+      properties:
+        value:
+          type: number
+          example: 22.5
+        unit:
+          type: string
+          enum: [kg/m^2]
+        lowerbound:
+          type: number
+          nullable: true
+          exclusiveMinimum: 0
+          example: 18.5
+        upperbound:
+          type: number
+          nullable: true
+          exclusiveMinimum: 0
+          example: 30.0
+
+    Age:
+      type: object
+      required:
+        - value
+        - unit
+      properties:
+        value:
+          type: number
+          example: 65
+        unit:
+          type: string
+          enum: [year]
+        lowerbound:
+          type: number
+          nullable: true
+          exclusiveMinimum: 0
+          example: 60
+        upperbound:
+          type: number
+          nullable: true
+          exclusiveMinimum: 0
+          example: 70
+
+    Diagnosis:
+      type: object
+      required:
+        - code
+        - term
+      properties:
+        code:
+          type: string
+          example: DOID:9351
+        term:
+          type: string
+          example: diabetes mellitus
+
+    RegMarker:
+      type: object
+      required:
+        - action
+        - marker
+      properties:
+        action:
+          type: string
+          enum:
+            - up_regulates
+            - down_regulates
+            - inconclusively_regulates
+        marker:
+          type: string
+          oneOf:
+            - pattern: '^HGNC:\d+$'
+              description: HGNC gene identifier
+            - pattern: "^UNIPROTKB:[A-Z0-9]+$"
+              description: UniProtKB protein identifier
+          example: HGNC:11027
+
+    CreateSenotypeRequest:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+          minLength: 1
+          example: Example Senotype
+        description:
+          type: string
+          minLength: 1
+          example: This is an example senotype for testing purposes.
+        bmi:
+          oneOf:
+            - $ref: "#/components/schemas/BMI"
+            - type: "null"
+        age:
+          $ref: "#/components/schemas/Age"
+          nullable: true
+        taxon:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["NCBI:9606"]
+        organ:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["UBERON:0001066"]
+        cell_type:
+          type: array
+          nullable: true
+          items:
+            type: string
+            pattern: '^CL:\d+$'
+          example: ["CL:0000507"]
+        microenvironment:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["SENOTYPE_VS:C00302"]
+        inducer:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["SENOTYPE_VS:C00405"]
+        hallmark:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["SENOTYPE_VS:C00209"]
+        assay:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["SENOTYPE_VS:C00507"]
+        sex:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["SNOMEDCT_US:248153007"]
+        diagnosis:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/Diagnosis"
+        citation:
+          type: array
+          nullable: true
+          items:
+            type: string
+            pattern: '^PMID:\d+$'
+          example: ["PMID:41705430"]
+        origin:
+          type: array
+          nullable: true
+          items:
+            type: string
+            pattern: "^RRID:"
+          example: ["RRID:scr_020638"]
+        dataset:
+          type: array
+          nullable: true
+          items:
+            type: string
+            pattern: "^[a-f0-9]{32}$"
+          example: ["73df6847495fcd61e4b6e5292ab2c9dc"]
+        characterizing_marker_set:
+          type: array
+          nullable: true
+          items:
+            type: string
+            oneOf:
+              - pattern: '^HGNC:\d+$'
+                description: HGNC gene identifier
+              - pattern: "^UNIPROTKB:[A-Z0-9]+$"
+                description: UniProtKB protein identifier
+          example: ["HGNC:9561"]
+        regulating_marker_set:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/RegMarker"
+      example:
+        title: Example Senotype
+        description: This is an example senotype for testing purposes.
+        bmi:
+          value: 22.5
+          unit: kg/m^2
+          lowerbound: 18.5
+          upperbound: 30.0
+        age:
+          value: 65
+          unit: year
+          lowerbound: 60
+          upperbound: 70
+        taxon: ["NCBI:9606"]
+        organ: ["UBERON:0001066"]
+        cell_type: ["CL:0000507"]
+        microenvironment: ["SENOTYPE_VS:C00302"]
+        inducer: ["SENOTYPE_VS:C00405"]
+        hallmark: ["SENOTYPE_VS:C00209"]
+        assay: ["SENOTYPE_VS:C00507"]
+        sex: ["SNOMEDCT_US:248153007"]
+        diagnosis:
+          - code: DOID:9351
+            term: diabetes mellitus
+        citation: ["PMID:41705430"]
+        origin: ["RRID:scr_020638"]
+        dataset: ["73df6847495fcd61e4b6e5292ab2c9dc"]
+        characterizing_marker_set: ["HGNC:9561"]
+        regulating_marker_set:
+          - action: down_regulates
+            marker: HGNC:11027
+          - action: up_regulates
+            marker: UNIPROTKB:Q13201
