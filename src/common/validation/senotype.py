@@ -1,4 +1,5 @@
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
@@ -12,6 +13,7 @@ from common.context import (
 )
 from common.database.valuesets import find_valuesets
 from common.decorator import TokenInfo
+from common.validation import with_app_context
 
 CellTypeCode = Annotated[str, StringConstraints(pattern=r"^CL:\d+$")]  # cell types
 DatasetUUID = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]  # datasets
@@ -114,45 +116,22 @@ def validate_create_senotype_request(
     if req.age:
         results["age"] = req.age.model_dump()
 
-    res, err = _validate_valuesets_fields(req)
-    if err:
-        errors.update(err)
-    else:
-        results.update(res)
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(with_app_context(lambda: _validate_valuesets_fields(req))),
+            executor.submit(with_app_context(lambda: _validate_ubkg_fields(req))),
+            executor.submit(with_app_context(lambda: _validate_citation(req))),
+            executor.submit(with_app_context(lambda: _validate_origin(req))),
+            executor.submit(with_app_context(lambda: _validate_dataset(req, token_info))),
+            executor.submit(with_app_context(lambda: _validate_marker(req))),
+        ]
 
-    res, err = _validate_ubkg_fields(req)
-    if err:
-        errors.update(err)
-    else:
-        results.update(res)
-
-    # citation
-    res, err = _validate_citation(req)
-    if err:
-        errors.update(err)
-    else:
-        results.update(res)
-
-    # origin
-    res, err = _validate_origin(req)
-    if err:
-        errors.update(err)
-    else:
-        results.update(res)
-
-    # dataset
-    res, err = _validate_dataset(req, token_info)
-    if err:
-        errors.update(err)
-    else:
-        results.update(res)
-
-    # markers and regmarkers
-    res, err = _validate_marker(req)
-    if err:
-        errors.update(err)
-    else:
-        results.update(res)
+        for future in futures:
+            res, err = future.result()
+            if err:
+                errors.update(err)
+            else:
+                results.update(res)
 
     if errors:
         return {}, errors
