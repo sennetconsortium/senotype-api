@@ -106,8 +106,8 @@ def validate_create_senotype_request(
     results = dict()
     errors = dict()
 
-    results["title"] = req.title
-    results["description"] = req.description
+    results["title"] = req.title.strip()
+    results["description"] = req.description.strip()
 
     if req.bmi:
         results["bmi"] = req.bmi.model_dump()
@@ -464,8 +464,8 @@ def _validate_marker(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             {
                 f"HGNC:{g['hgnc_id']}": {
                     "code": f"HGNC:{g['hgnc_id']}",
-                    "term": g["approved_symbol"],
-                    "name": g["approved_name"],
+                    "term": g["approved_symbol"].strip(),
+                    "name": g["approved_name"].strip(),
                 }
                 for g in gene_info
             }
@@ -486,7 +486,8 @@ def _validate_marker(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             p = protein_info[0]
             all_info[f"UNIPROTKB:{p['uniprotkb_id']}"] = {
                 "code": f"UNIPROTKB:{p['uniprotkb_id']}",
-                "term": p["recommended_name"],
+                "term": p["entry_name"][0].strip(),  # a list in ubkg
+                "name": p["recommended_name"][0].strip(),  # a list in ubkg
             }
 
     for marker in req_markers:
