@@ -13,6 +13,22 @@ servers:
   - url: "https://senotype.api.sennetconsortium.org"
 
 paths:
+  /status:
+    get:
+      summary: Health check
+      operationId: getStatus
+      responses:
+        "200":
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
   /senotypes:
     post:
       summary: Create a senotype
