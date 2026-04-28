@@ -80,8 +80,8 @@ if __name__ == "__main__":
         "-p",
         "--port",
         type=int,
-        default=5010,
-        help="Port to run the Flask app on (default: 5010)",
+        default=7777,
+        help="Port to run the Flask app on (default: 7777)",
     )
     parser.add_argument(
         "-d",

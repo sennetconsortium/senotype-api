@@ -13,7 +13,7 @@ services:
     platform: linux/amd64
     init: true
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:5010/status"]
+      test: ["CMD", "curl", "--fail", "http://localhost:7777/status"]
       interval: 1m30s
       timeout: 10s
       retries: 3
@@ -22,7 +22,7 @@ services:
       # Mount the app config to container in order to keep it outside of the image
       - "../src/instance/app.cfg:/usr/src/app/src/instance/app.cfg:ro"
     ports:
-      - "5010:5010"
+      - "7777:7777"
     networks:
       - sennet_docker_network
 
