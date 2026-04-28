@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, request
 
 from common.context import get_uuid_api_service
 from common.database.senotypes import delete_senotype as delete_db_senotype
@@ -76,6 +76,11 @@ def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
         current_app.logger.error(f"Error inserting new senotype into database: {e}")
         return {"error": "Failed to insert new senotype into database"}, 500
 
+    # Check if user wants the created senotype returned
+    return_dict = request.args.get("return_dict", "true")
+    if return_dict.lower() == "false":
+        return {"message": "Senotype created"}, 201
+
     return {"senotype": res}, 201
 
 
@@ -123,6 +128,11 @@ def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInf
     except Exception as e:
         current_app.logger.error(f"Error updating senotype in database: {e}")
         return {"error": "Failed to update senotype in database"}, 500
+
+    # Check if user wants the updated senotype returned
+    return_dict = request.args.get("return_dict", "true")
+    if return_dict.lower() == "false":
+        return {"message": "Senotype updated"}, 200
 
     return {"senotype": new_doc}, 200
 
