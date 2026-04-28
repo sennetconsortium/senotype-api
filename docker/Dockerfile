@@ -5,6 +5,8 @@ LABEL description="SenNet Senotype API Service"
 ARG HOST_GID
 ARG HOST_UID
 
+ENV FLASK_DEBUG=0
+
 USER root
 
 # Change to directory that contains the Dockerfile
