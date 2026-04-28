@@ -12,14 +12,14 @@ from common.validation.senotype import CreateSenotypeRequest, validate_create_se
 senotypes_bp = Blueprint("senotypes", __name__)
 
 
-@senotypes_bp.route("/", methods=["GET"])
+@senotypes_bp.route("/senotypes", methods=["GET"])
 @require_globus_groups_token(required_group_name="senotype-edit")
 def get_senotypes():
     senotypes = find_senotypes()
     return {"senotypes": senotypes}, 200
 
 
-@senotypes_bp.route("/<string:uuid>", methods=["GET"])
+@senotypes_bp.route("/senotypes/<string:uuid>", methods=["GET"])
 @require_globus_groups_token(required_group_name="senotype-edit")
 def get_senotype(uuid: str):
     senotype = find_senotype(uuid)
@@ -29,7 +29,7 @@ def get_senotype(uuid: str):
     return {"senotype": senotype}, 200
 
 
-@senotypes_bp.route("/", methods=["POST"])
+@senotypes_bp.route("/senotypes", methods=["POST"])
 @require_globus_groups_token(required_group_name="senotype-edit")
 @validate_body(CreateSenotypeRequest)
 def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
@@ -84,7 +84,7 @@ def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
     return {"senotype": res}, 201
 
 
-@senotypes_bp.route("/<string:uuid>", methods=["PUT"])
+@senotypes_bp.route("/senotypes/<string:uuid>", methods=["PUT"])
 @require_globus_groups_token(required_group_name="senotype-edit")
 @validate_body(CreateSenotypeRequest)
 def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInfo):

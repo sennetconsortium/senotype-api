@@ -54,8 +54,8 @@ def configure_services(app: Flask, config: AppConfig):
 
 
 def configure_routes(app: Flask):
-    app.register_blueprint(senotypes_bp, url_prefix="/senotypes")
-    app.register_blueprint(status_bp, url_prefix="/status")
+    app.register_blueprint(senotypes_bp)
+    app.register_blueprint(status_bp)
 
 
 def create_app() -> Flask:
