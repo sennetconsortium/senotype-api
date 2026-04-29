@@ -30,6 +30,41 @@ paths:
                     example: ok
 
   /senotypes:
+    get:
+      summary: Get all senotypes
+      operationId: getSenotypes
+      description: >
+        Requires the authenticated user to be a member of the
+        `senotype-edit` Globus group.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: return_dict
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+            default: "true"
+          description: Whether to return the full senotype objects
+      responses:
+        "200":
+          description: List of senotypes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  senotypes:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     post:
       summary: Create a senotype
       operationId: createSenotype
@@ -57,6 +92,40 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /senotypes/{uuid}:
+    get:
+      summary: Get a senotype by UUID
+      operationId: getSenotype
+      description: >
+        Requires the authenticated user to be a member of the
+        `senotype-edit` Globus group.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-f0-9]{32}$"
+            example: 73df6847495fcd61e4b6e5292ab2c9dc
+      responses:
+        "200":
+          description: Senotype found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  senotype:
+                    type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     put:
       summary: Update a senotype
       operationId: updateSenotype
@@ -85,6 +154,43 @@ paths:
           description: Senotype updated successfully
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete a senotype
+      operationId: deleteSenotype
+      description: >
+        Requires the authenticated user to be a member of the
+        `senotype-edit` Globus group. The user must also be the
+        original creator of the senotype.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-f0-9]{32}$"
+            example: 73df6847495fcd61e4b6e5292ab2c9dc
+      responses:
+        "200":
+          description: Senotype deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Senotype deleted
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
