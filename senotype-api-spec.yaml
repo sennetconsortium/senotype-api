@@ -94,6 +94,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /valuesets:
+    get:
+      summary: Get valuesets
+      operationId: getValuesets
+      description: >
+        Requires the authenticated user to be a member of the
+        `senotype-edit` Globus group.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: predicate_term
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter valuesets by predicate term
+          example: in_taxon
+      responses:
+        "200":
+          description: List of valuesets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valuesets:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Valueset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -379,3 +415,24 @@ components:
             marker: HGNC:11027
           - action: up_regulates
             marker: UNIPROTKB:Q13201
+
+    Valueset:
+      type: object
+      required:
+        - code
+        - term
+        - predicate_term
+      properties:
+        code:
+          type: string
+          example: NCBI:9606
+        term:
+          type: string
+          example: human
+        predicate_term:
+          type: string
+          example: in_taxon
+        predicate_iri:
+          type: string
+          nullable: true
+          example: http://purl.obolibrary.org/obo/RO_0002162
