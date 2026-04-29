@@ -9,6 +9,7 @@ from pymongo import MongoClient
 from common.config import AppConfig
 from routes.senotypes import senotypes_bp
 from routes.status import status_bp
+from routes.valuesets import valuesets_bp
 
 logging.basicConfig(
     format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
@@ -56,6 +57,7 @@ def configure_services(app: Flask, config: AppConfig):
 def configure_routes(app: Flask):
     app.register_blueprint(senotypes_bp)
     app.register_blueprint(status_bp)
+    app.register_blueprint(valuesets_bp)
 
 
 def create_app() -> Flask:

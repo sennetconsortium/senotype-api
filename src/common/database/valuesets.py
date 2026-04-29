@@ -12,9 +12,12 @@ class Valueset(BaseModel):
     predicate_iri: Optional[str] = None
 
 
-def find_valuesets() -> list[Valueset]:
+def find_valuesets(predicate_term: str | None = None) -> list[Valueset]:
     collection = get_collection("valuesets")
-    docs = collection.find({}, {"_id": 0})  # exclude the MongoDB _id field
+    query = {}
+    if predicate_term is not None:
+        query["predicate_term"] = predicate_term
+    docs = collection.find(query, {"_id": 0})  # exclude the MongoDB _id field
     return [Valueset.model_validate(doc) for doc in docs]
 
 
