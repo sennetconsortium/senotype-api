@@ -204,11 +204,6 @@ paths:
     get:
       summary: Get valuesets
       operationId: getValuesets
-      description: >
-        Requires the authenticated user to be a member of the
-        `senotype-edit` Globus group.
-      security:
-        - bearerAuth: []
       parameters:
         - name: predicate_term
           in: query
