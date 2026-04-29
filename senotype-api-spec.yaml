@@ -109,8 +109,16 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - assay
+              - context
+              - hallmark
+              - inducer
+              - located_in
+              - microenvironment
+              - sex
+              - taxon
           description: Filter valuesets by predicate term
-          example: in_taxon
       responses:
         "200":
           description: List of valuesets
