@@ -137,9 +137,17 @@ def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInf
     return {"senotype": new_doc}, 200
 
 
-@senotypes_bp.route("/<string:uuid>", methods=["DELETE"])
-@require_globus_groups_token(required_group_name="data-admin")
-def delete_senotype(uuid: str):
+@senotypes_bp.route("/senotypes/<string:uuid>", methods=["DELETE"])
+@require_globus_groups_token(required_group_name="senotype-edit")
+def delete_senotype(uuid: str, token_info: TokenInfo):
+    # Check if user owns the senotype
+    senotype = find_senotype(uuid)
+    if senotype is None:
+        return {"error": "Senotype not found"}, 404
+
+    if senotype["created_by_user_sub"] != token_info.sub:
+        return {"error": "You do not have permission to delete this senotype"}, 403
+
     result = delete_db_senotype(uuid)
     if not result:
         return {"error": "Senotype not found"}, 404
