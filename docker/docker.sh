@@ -28,10 +28,10 @@ case "$COMMAND" in
     fi
     case "$ENV" in
       prod)
-        docker compose -f docker/docker-compose.yml build --no-cache
+        docker compose -p senotype-api -f docker/docker-compose.yml build --no-cache
         ;;
       dev)
-        docker compose -f docker/docker-compose.yml -f docker/docker-compose.development.yml build --no-cache
+        docker compose -p senotype-api -f docker/docker-compose.yml -f docker/docker-compose.development.yml build --no-cache
         ;;
     esac
     ;;
@@ -41,15 +41,15 @@ case "$COMMAND" in
     fi
     case "$ENV" in
       prod)
-        docker compose -f docker/docker-compose.yml up -d
+        docker compose -p senotype-api -f docker/docker-compose.yml up -d
         ;;
       dev)
-        docker compose -f docker/docker-compose.yml -f docker/docker-compose.development.yml up -d
+        docker compose -p senotype-api -f docker/docker-compose.yml -f docker/docker-compose.development.yml up -d
         ;;
     esac
     ;;
   stop)
-    docker compose -f docker/docker-compose.yml down
+    docker compose -p senotype-api -f docker/docker-compose.yml down
     ;;
   *)
     usage
