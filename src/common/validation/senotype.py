@@ -151,7 +151,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             if code not in valueset_dict:
                 errors["taxon"].append(f"Valueset '{code}' not found in valuesets")
                 continue
-            if valueset_dict[code].predicate_term != "in_taxon":
+            if valueset_dict[code].predicate_term != "taxon":
                 errors["taxon"].append(f"Valueset '{code}' is not a taxon code")
                 continue
             results["taxon"].append(
@@ -167,7 +167,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             if code not in valueset_dict:
                 errors["microenvironment"].append(f"Valueset '{code}' not found in valuesets")
                 continue
-            if valueset_dict[code].predicate_term != "has_microenvironment":
+            if valueset_dict[code].predicate_term != "microenvironment":
                 errors["microenvironment"].append(
                     f"Valueset '{code}' is not a microenvironment code"
                 )
@@ -185,7 +185,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             if code not in valueset_dict:
                 errors["inducer"].append(f"Valueset '{code}' not found in valuesets")
                 continue
-            if valueset_dict[code].predicate_term != "has_inducer":
+            if valueset_dict[code].predicate_term != "inducer":
                 errors["inducer"].append(f"Valueset '{code}' is not an inducer code")
                 continue
             results["inducer"].append(
@@ -201,7 +201,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             if code not in valueset_dict:
                 errors["hallmark"].append(f"Valueset '{code}' not found in valuesets")
                 continue
-            if valueset_dict[code].predicate_term != "has_hallmark":
+            if valueset_dict[code].predicate_term != "hallmark":
                 errors["hallmark"].append(f"Valueset '{code}' is not a hallmark code")
                 continue
             results["hallmark"].append(
@@ -217,7 +217,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             if code not in valueset_dict:
                 errors["assay"].append(f"Valueset '{code}' not found in valuesets")
                 continue
-            if valueset_dict[code].predicate_term != "has_assay":
+            if valueset_dict[code].predicate_term != "assay":
                 errors["assay"].append(f"Valueset '{code}' is not an assay code")
                 continue
             results["assay"].append(
@@ -233,7 +233,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             if code not in valueset_dict:
                 errors["sex"].append(f"Valueset '{code}' not found in valuesets")
                 continue
-            if valueset_dict[code].predicate_term != "has_sex":
+            if valueset_dict[code].predicate_term != "sex":
                 errors["sex"].append(f"Valueset '{code}' is not a sex code")
                 continue
             results["sex"].append(
