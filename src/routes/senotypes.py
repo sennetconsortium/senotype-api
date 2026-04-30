@@ -24,7 +24,7 @@ def get_senotypes():
 def get_senotype(uuid: str):
     senotype = find_senotype(uuid)
     if senotype is None:
-        return {"error": "Senotype not found"}, 404
+        return {"message": "Senotype not found"}, 404
 
     return {"senotype": senotype}, 200
 
@@ -39,10 +39,10 @@ def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
     try:
         res, err = validate_create_senotype_request(body, token_info)
         if err:
-            return {"errors": err}, 400
+            return {"message": "Validation error", "errors": err}, 400
     except Exception as e:
         current_app.logger.error(f"Unexpected error during senotype creation validation: {e}")
-        return {"error": "An unexpected error occurred during validation"}, 500
+        return {"message": "An unexpected error occurred during validation"}, 500
 
     # Create a new UUID for the senotype
     try:
@@ -53,7 +53,7 @@ def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
         uuid_item = uuid_res[0]
     except Exception as e:
         current_app.logger.error(f"Error creating UUID for new senotype: {e}")
-        return {"error": "Failed to create UUID for new senotype"}, 500
+        return {"message": "Failed to create UUID for new senotype"}, 500
 
     # Insert the new senotype into the database
     try:
@@ -74,7 +74,7 @@ def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
         insert_senotype(db_item)
     except Exception as e:
         current_app.logger.error(f"Error inserting new senotype into database: {e}")
-        return {"error": "Failed to insert new senotype into database"}, 500
+        return {"message": "Failed to insert new senotype into database"}, 500
 
     # Check if user wants the created senotype returned
     return_dict = request.args.get("return_dict", "true")
@@ -91,10 +91,10 @@ def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInf
     # Check if user owns the senotype
     senotype = find_senotype(uuid)
     if senotype is None:
-        return {"error": "Senotype not found"}, 404
+        return {"message": "Senotype not found"}, 404
 
     if senotype["created_by_user_sub"] != token_info.sub:
-        return {"error": "You do not have permission to update this senotype"}, 403
+        return {"message": "You do not have permission to update this senotype"}, 403
 
     # Validate in two steps:
     # 1. Validate general structure using validate_body decorator
@@ -102,10 +102,10 @@ def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInf
     try:
         res, err = validate_create_senotype_request(body, token_info)
         if err:
-            return {"errors": err}, 400
+            return {"message": "Validation error", "errors": err}, 400
     except Exception as e:
         current_app.logger.error(f"Unexpected error during senotype creation validation: {e}")
-        return {"error": "An unexpected error occurred during validation"}, 500
+        return {"message": "An unexpected error occurred during validation"}, 500
 
     # Update the new senotype into the database
     try:
@@ -127,7 +127,7 @@ def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInf
             raise Exception("Database update failed, no document returned")
     except Exception as e:
         current_app.logger.error(f"Error updating senotype in database: {e}")
-        return {"error": "Failed to update senotype in database"}, 500
+        return {"message": "Failed to update senotype in database"}, 500
 
     # Check if user wants the updated senotype returned
     return_dict = request.args.get("return_dict", "true")
@@ -143,13 +143,13 @@ def delete_senotype(uuid: str, token_info: TokenInfo):
     # Check if user owns the senotype
     senotype = find_senotype(uuid)
     if senotype is None:
-        return {"error": "Senotype not found"}, 404
+        return {"message": "Senotype not found"}, 404
 
     if senotype["created_by_user_sub"] != token_info.sub:
-        return {"error": "You do not have permission to delete this senotype"}, 403
+        return {"message": "You do not have permission to delete this senotype"}, 403
 
     result = delete_db_senotype(uuid)
     if not result:
-        return {"error": "Senotype not found"}, 404
+        return {"message": "Senotype not found"}, 404
 
     return {"message": "Senotype deleted"}, 200

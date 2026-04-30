@@ -27,20 +27,20 @@ def require_globus_groups_token(required_group_name: str | None = None):
         def wrapper(*args, **kwargs):
             auth = request.authorization
             if not auth or auth.type != "bearer":
-                return {"error": "Missing or invalid Authorization header"}, 401
+                return {"message": "Missing or invalid Authorization header"}, 401
 
             token = auth.token
-            if not token:
-                return {"error": "Missing token"}, 401
+            if not token or auth.type != "bearer":
+                return {"message": "Missing token"}, 401
 
             introspect = get_auth_client().oauth2_token_introspect(token)
 
             if not introspect.get("active"):
-                return {"error": "Invalid or expired token"}, 401
+                return {"message": "Invalid or expired token"}, 401
 
             audiences = introspect.get("aud", [])
             if GLOBUS_GROUPS_RESOURCE_SERVER not in audiences:
-                return {"error": "Token is not valid for Globus Groups"}, 403
+                return {"message": "Token is not valid for Globus Groups"}, 403
 
             groups_client = GroupsClient(authorizer=AccessTokenAuthorizer(token))
             groups = [g["id"] for g in groups_client.get_my_groups()]
@@ -60,12 +60,12 @@ def require_globus_groups_token(required_group_name: str | None = None):
                 required_group_uuid = globus_group_uuids.get(required_group_name)
                 if not required_group_uuid:
                     return {
-                        "error": f"Required group '{required_group_name}' is not configured"
+                        "message": f"Required group '{required_group_name}' is not configured"
                     }, 500
 
                 if str(required_group_uuid) not in groups:
                     return {
-                        "error": f"User is not a member of required group: {required_group_name}"
+                        "message": f"User is not a member of required group: {required_group_name}"
                     }, 403
 
             sig = inspect.signature(func)
@@ -84,7 +84,7 @@ def validate_body(model: Type[BaseModel]):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not request.is_json:
-                return {"error": "Content-Type must be application/json"}, 415
+                return {"message": "Content-Type must be application/json"}, 415
 
             try:
                 parsed = model.model_validate(request.get_json())
@@ -95,7 +95,7 @@ def validate_body(model: Type[BaseModel]):
                     msg = err["msg"]
                     msg = msg.removeprefix("Value error, ")
                     errors.setdefault(field, []).append(msg)
-                return {"errors": errors}, 400
+                return {"message": "Validation error", "errors": errors}, 400
 
             sig = inspect.signature(func)
             if "body" in sig.parameters:
