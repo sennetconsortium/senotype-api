@@ -13,12 +13,12 @@ class SearchAPIService:
         adapter = HTTPAdapter(max_retries=retries)
         self._session.mount(self._base_url, adapter)
 
-    def reindex_senotype(self, senotype_id: str) -> bool:
-        url = f"{self._base_url}/senotypes/{senotype_id}"
-        try:
-            response = self._session.put(url, timeout=SERVICE_TIMEOUT)
-            response.raise_for_status()
-            return True
-        except Exception as e:
-            print(f"Failed to reindex senotype {senotype_id}: {e}")
-            return False
+    def reindex_senotype(self, uuid: str, token: str | None = None):
+        headers = None
+        if token:
+            headers = {"Authorization": f"Bearer {token}"}
+
+        # TODO: Remove todo suffix once senotypes are fully implemented
+        url = f"{self._base_url}/senotypes/reindex/test/{uuid}"
+        response = self._session.put(url, headers=headers, timeout=SERVICE_TIMEOUT)
+        response.raise_for_status()

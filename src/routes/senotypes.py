@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, current_app, request
 
-from common.context import get_uuid_api_service
+from common.context import get_search_api_service, get_uuid_api_service
 from common.database.senotypes import delete_senotype as delete_db_senotype
 from common.database.senotypes import find_senotype, find_senotypes, insert_senotype
 from common.database.senotypes import update_senotype as update_db_senotype
@@ -58,7 +58,7 @@ def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
     # Insert the new senotype into the database
     try:
         now = datetime.now(timezone.utc)
-        db_item = {
+        doc = {
             "uuid": uuid_item["uuid"],
             "sennet_id": uuid_item["sennet_id"],
             "created_by_user_displayname": token_info.name,
@@ -71,12 +71,23 @@ def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
             "last_modified_timestamp": now,
             **res,
         }
-        new_doc = insert_senotype(db_item)
+        new_doc = insert_senotype(doc)
         if new_doc is None:
             raise Exception("Database insertion failed, no document returned")
     except Exception as e:
         current_app.logger.error(f"Error inserting new senotype into database: {e}")
         return {"message": "Failed to insert new senotype into database"}, 500
+
+    # Reindex the new senotype in the search API
+    try:
+        get_search_api_service().reindex_senotype(
+            new_doc["uuid"],
+            token=token_info.token.get_secret_value(),
+        )
+    except Exception as e:
+        current_app.logger.error(
+            f"Error reindexing new senotype {new_doc['uuid']} in search API: {e}"
+        )
 
     # Check if user wants the created senotype returned
     return_dict = request.args.get("return_dict", "true")
@@ -109,9 +120,9 @@ def update_senotype(uuid: str, body: SenotypeRequest, token_info: TokenInfo):
         current_app.logger.error(f"Unexpected error during senotype creation validation: {e}")
         return {"message": "An unexpected error occurred during validation"}, 500
 
-    # Update the new senotype into the database
+    # Update the senotype in the database
     try:
-        db_item = {
+        doc = {
             "uuid": senotype["uuid"],
             "sennet_id": senotype["sennet_id"],
             "created_by_user_displayname": senotype["created_by_user_displayname"],
@@ -124,12 +135,23 @@ def update_senotype(uuid: str, body: SenotypeRequest, token_info: TokenInfo):
             "last_modified_timestamp": datetime.now(timezone.utc),
             **res,
         }
-        new_doc = update_db_senotype(uuid, db_item)
+        new_doc = update_db_senotype(uuid, doc)
         if new_doc is None:
             raise Exception("Database update failed, no document returned")
     except Exception as e:
         current_app.logger.error(f"Error updating senotype in database: {e}")
         return {"message": "Failed to update senotype in database"}, 500
+
+    # Reindex the updated senotype in the search API
+    try:
+        get_search_api_service().reindex_senotype(
+            new_doc["uuid"],
+            token=token_info.token.get_secret_value(),
+        )
+    except Exception as e:
+        current_app.logger.error(
+            f"Error reindexing updated senotype {new_doc['uuid']} in search API: {e}"
+        )
 
     # Check if user wants the updated senotype returned
     return_dict = request.args.get("return_dict", "true")
