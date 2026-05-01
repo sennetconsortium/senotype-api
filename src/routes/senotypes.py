@@ -71,7 +71,9 @@ def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
             "last_modified_timestamp": int(now),
             **res,
         }
-        insert_senotype(db_item)
+        new_doc = insert_senotype(db_item)
+        if new_doc is None:
+            raise Exception("Database insertion failed, no document returned")
     except Exception as e:
         current_app.logger.error(f"Error inserting new senotype into database: {e}")
         return {"message": "Failed to insert new senotype into database"}, 500
@@ -81,7 +83,7 @@ def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
     if return_dict.lower() == "false":
         return {"message": "Senotype created"}, 201
 
-    return {"senotype": res}, 201
+    return {"senotype": new_doc}, 201
 
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["PUT"])
