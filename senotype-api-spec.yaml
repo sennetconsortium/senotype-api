@@ -1,14 +1,14 @@
 openapi: 3.0.3
 info:
   description: "The SenNet Senotype API is a RESTful web service with create, read, update, and delete operations for the SenNet senotype data."
-  title: Senotype API
+  title: SenNet Senotype API
   version: 1.0.0
   contact:
     name: SenNet Help Desk
     email: help@sennetconsortium.org
   license:
     name: MIT License
-    url: "https://github.com/sennetconsortium/entity-api/blob/main/license.txt"
+    url: "https://github.com/sennetconsortium/senotype-api/blob/main/license.txt"
 servers:
   - url: "https://senotype.api.sennetconsortium.org"
 
