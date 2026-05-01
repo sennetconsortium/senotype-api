@@ -57,18 +57,18 @@ def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
 
     # Insert the new senotype into the database
     try:
-        now = datetime.now(timezone.utc).timestamp() * 1000
+        now = datetime.now(timezone.utc)
         db_item = {
             "uuid": uuid_item["uuid"],
             "sennet_id": uuid_item["sennet_id"],
             "created_by_user_displayname": token_info.name,
             "created_by_user_email": token_info.email,
             "created_by_user_sub": token_info.sub,
-            "created_timestamp": int(now),
+            "created_timestamp": now,
             "last_modified_user_displayname": token_info.name,
             "last_modified_user_email": token_info.email,
             "last_modified_user_sub": token_info.sub,
-            "last_modified_timestamp": int(now),
+            "last_modified_timestamp": now,
             **res,
         }
         new_doc = insert_senotype(db_item)
@@ -121,7 +121,7 @@ def update_senotype(uuid: str, body: SenotypeRequest, token_info: TokenInfo):
             "last_modified_user_displayname": senotype["last_modified_user_displayname"],
             "last_modified_user_email": senotype["last_modified_user_email"],
             "last_modified_user_sub": senotype["last_modified_user_sub"],
-            "last_modified_timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
+            "last_modified_timestamp": datetime.now(timezone.utc),
             **res,
         }
         new_doc = update_db_senotype(uuid, db_item)

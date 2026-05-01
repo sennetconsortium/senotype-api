@@ -466,9 +466,7 @@ def _validate_marker(req: SenotypeRequest) -> tuple[dict, dict]:
 
     for marker in req_markers:
         if marker not in all_info:
-            errors["specified_marker_set"].append(
-                f"Specified marker '{marker}' not found in UBKG"
-            )
+            errors["specified_marker_set"].append(f"Specified marker '{marker}' not found in UBKG")
             continue
         results["specified_marker_set"].append(all_info[marker])
 

@@ -2,11 +2,14 @@ import atexit
 import logging
 import os
 
+from bson import CodecOptions
+from bson.codec_options import TypeRegistry
 from flask import Flask
 from globus_sdk import ConfidentialAppAuthClient
 from pymongo import MongoClient
 
 from common.config import AppConfig
+from common.database import DatetimeDecoder
 from routes.senotypes import senotypes_bp
 from routes.status import status_bp
 from routes.valuesets import valuesets_bp
@@ -50,7 +53,9 @@ def configure_services(app: Flask, config: AppConfig):
         authSource=config.MONGO_DB_NAME,
     )
     mongo_client.admin.command("ping")
-    app.extensions["mongo_db"] = mongo_client[config.MONGO_DB_NAME]
+    codec_options = CodecOptions(type_registry=TypeRegistry([DatetimeDecoder()]))
+    mongo_db = mongo_client.get_database(config.MONGO_DB_NAME, codec_options=codec_options)
+    app.extensions["mongo_db"] = mongo_db
     atexit.register(mongo_client.close)
 
 
