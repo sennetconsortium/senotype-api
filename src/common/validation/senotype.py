@@ -75,34 +75,34 @@ class Diagnosis(BaseModel):
     term: str
 
 
-class RegMarker(BaseModel):
+class RegulatedMarker(BaseModel):
     action: Literal["up_regulates", "down_regulates", "inconclusively_regulates"]
     marker: HGNCCode | UNIPROTKBCode
 
 
-class CreateSenotypeRequest(BaseModel):
+class SenotypeRequest(BaseModel):
     title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     description: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-    bmi: Optional[BMI]
-    age: Optional[Age]
-    taxon: Optional[list[str]]
-    organ: Optional[list[str]]
-    cell_type: Optional[list[CellTypeCode]]
-    microenvironment: Optional[list[str]]
-    inducer: Optional[list[str]]
-    hallmark: Optional[list[str]]
-    assay: Optional[list[str]]
-    sex: Optional[list[str]]
-    diagnosis: Optional[list[Diagnosis]]
-    citation: Optional[list[PMIDCode]]
-    origin: Optional[list[str]]
-    dataset: Optional[list[DatasetUUID]]
-    characterizing_marker_set: Optional[list[HGNCCode | UNIPROTKBCode]]
-    regulating_marker_set: Optional[list[RegMarker]]
+    taxon: list[str] = Field(min_length=1)
+    organ: list[str] = Field(min_length=1)
+    cell_type: list[CellTypeCode] = Field(min_length=1)
+    hallmark: list[str] = Field(min_length=1)
+    bmi: Optional[BMI] = None
+    age: Optional[Age] = None
+    microenvironment: Optional[list[str]] = None
+    inducer: Optional[list[str]] = None
+    assay: Optional[list[str]] = None
+    sex: Optional[list[str]] = None
+    diagnosis: Optional[list[Diagnosis]] = None
+    citation: Optional[list[PMIDCode]] = None
+    origin: Optional[list[str]] = None
+    dataset: Optional[list[DatasetUUID]] = None
+    specified_marker_set: Optional[list[HGNCCode | UNIPROTKBCode]] = None
+    regulated_marker_set: Optional[list[RegulatedMarker]] = None
 
 
-def validate_create_senotype_request(
-    req: CreateSenotypeRequest,
+def validate_senotype_request(
+    req: SenotypeRequest,
     token_info: TokenInfo,
 ) -> tuple[dict, dict]:
     results = dict()
@@ -139,27 +139,26 @@ def validate_create_senotype_request(
     return results, errors
 
 
-def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
+def _validate_valuesets_fields(req: SenotypeRequest) -> tuple[dict, dict]:
     # Fetch for valuesets fields
     valueset_dict = {vs.code: vs for vs in find_valuesets()}
     results = defaultdict(list)
     errors = defaultdict(list)
 
     # taxon
-    if req.taxon:
-        for code in req.taxon:
-            if code not in valueset_dict:
-                errors["taxon"].append(f"Valueset '{code}' not found in valuesets")
-                continue
-            if valueset_dict[code].predicate_term != "taxon":
-                errors["taxon"].append(f"Valueset '{code}' is not a taxon code")
-                continue
-            results["taxon"].append(
-                {
-                    "code": valueset_dict[code].code,
-                    "term": valueset_dict[code].term,
-                }
-            )
+    for code in req.taxon:
+        if code not in valueset_dict:
+            errors["taxon"].append(f"Valueset '{code}' not found in valuesets")
+            continue
+        if valueset_dict[code].predicate_term != "taxon":
+            errors["taxon"].append(f"Valueset '{code}' is not a taxon code")
+            continue
+        results["taxon"].append(
+            {
+                "code": valueset_dict[code].code,
+                "term": valueset_dict[code].term,
+            }
+        )
 
     # microenvironment
     if req.microenvironment:
@@ -196,20 +195,19 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             )
 
     # hallmark
-    if req.hallmark:
-        for code in req.hallmark:
-            if code not in valueset_dict:
-                errors["hallmark"].append(f"Valueset '{code}' not found in valuesets")
-                continue
-            if valueset_dict[code].predicate_term != "hallmark":
-                errors["hallmark"].append(f"Valueset '{code}' is not a hallmark code")
-                continue
-            results["hallmark"].append(
-                {
-                    "code": valueset_dict[code].code,
-                    "term": valueset_dict[code].term,
-                }
-            )
+    for code in req.hallmark:
+        if code not in valueset_dict:
+            errors["hallmark"].append(f"Valueset '{code}' not found in valuesets")
+            continue
+        if valueset_dict[code].predicate_term != "hallmark":
+            errors["hallmark"].append(f"Valueset '{code}' is not a hallmark code")
+            continue
+        results["hallmark"].append(
+            {
+                "code": valueset_dict[code].code,
+                "term": valueset_dict[code].term,
+            }
+        )
 
     # assay
     if req.assay:
@@ -246,7 +244,7 @@ def _validate_valuesets_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
     return dict(results), dict(errors)
 
 
-def _validate_ubkg_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
+def _validate_ubkg_fields(req: SenotypeRequest) -> tuple[dict, dict]:
     ubkg_service = get_ubkg_api_service()
     results = defaultdict(list)
     errors = defaultdict(list)
@@ -254,39 +252,36 @@ def _validate_ubkg_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
     # organ
     organs = {org["organ_uberon"]: org for org in ubkg_service.get_organs()}
 
-    if req.organ:
-        for code in req.organ:
-            if code not in organs:
-                errors["organ"].append(f"Organ '{code}' not found in UBKG")
-                continue
-            organ = organs[code]
-            results["organ"].append(
-                {
-                    "code": organ["organ_uberon"],
-                    "term": organ["term"],
-                }
-            )
+    for code in req.organ:
+        if code not in organs:
+            errors["organ"].append(f"Organ '{code}' not found in UBKG")
+            continue
+        organ = organs[code]
+        results["organ"].append(
+            {
+                "code": organ["organ_uberon"],
+                "term": organ["term"],
+            }
+        )
 
     # cell_type
-    if req.cell_type:
-        celltype_ids = [ct.split(":")[-1] for ct in req.cell_type]
-        celltypes = {
-            ct["cell_type"]["id"]: ct["cell_type"]
-            for ct in ubkg_service.get_celltypes(celltype_ids)
-        }
+    celltype_ids = [ct.split(":")[-1] for ct in req.cell_type]
+    celltypes = {
+        ct["cell_type"]["id"]: ct["cell_type"] for ct in ubkg_service.get_celltypes(celltype_ids)
+    }
 
-        for code in req.cell_type:
-            if code not in celltypes:
-                errors["cell_type"].append(f"Cell type '{code}' not found in UBKG")
-                continue
-            celltype = celltypes[code]
-            results["cell_type"].append(
-                {
-                    "code": celltype["id"],
-                    "term": celltype["name"],
-                    "definition": celltype["definition"],
-                }
-            )
+    for code in req.cell_type:
+        if code not in celltypes:
+            errors["cell_type"].append(f"Cell type '{code}' not found in UBKG")
+            continue
+        celltype = celltypes[code]
+        results["cell_type"].append(
+            {
+                "code": celltype["id"],
+                "term": celltype["name"],
+                "definition": celltype["definition"],
+            }
+        )
 
     # diagnosis
     if req.diagnosis:
@@ -308,7 +303,7 @@ def _validate_ubkg_fields(req: CreateSenotypeRequest) -> tuple[dict, dict]:
     return dict(results), dict(errors)
 
 
-def _validate_citation(req: CreateSenotypeRequest) -> tuple[dict, dict]:
+def _validate_citation(req: SenotypeRequest) -> tuple[dict, dict]:
     results = defaultdict(list)
     errors = defaultdict(list)
 
@@ -333,7 +328,7 @@ def _validate_citation(req: CreateSenotypeRequest) -> tuple[dict, dict]:
     return dict(results), dict(errors)
 
 
-def _validate_origin(req: CreateSenotypeRequest) -> tuple[dict, dict]:
+def _validate_origin(req: SenotypeRequest) -> tuple[dict, dict]:
     scicrunch_service = get_scicrunch_api_service()
     results = defaultdict(list)
     errors = defaultdict(list)
@@ -361,7 +356,7 @@ def _validate_origin(req: CreateSenotypeRequest) -> tuple[dict, dict]:
     return dict(results), dict(errors)
 
 
-def _validate_dataset(req: CreateSenotypeRequest, token_info: TokenInfo) -> tuple[dict, dict]:
+def _validate_dataset(req: SenotypeRequest, token_info: TokenInfo) -> tuple[dict, dict]:
     entity_service = get_entity_api_service()
     results = defaultdict(list)
     errors = defaultdict(list)
@@ -398,12 +393,12 @@ def _validate_dataset(req: CreateSenotypeRequest, token_info: TokenInfo) -> tupl
     return dict(results), dict(errors)
 
 
-def _validate_marker(req: CreateSenotypeRequest) -> tuple[dict, dict]:
-    if not req.characterizing_marker_set and not req.regulating_marker_set:
+def _validate_marker(req: SenotypeRequest) -> tuple[dict, dict]:
+    if not req.specified_marker_set and not req.regulated_marker_set:
         return {}, {}
 
-    req_markers = req.characterizing_marker_set or []
-    req_regmarkers = req.regulating_marker_set or []
+    req_markers = req.specified_marker_set or []
+    req_regmarkers = req.regulated_marker_set or []
 
     ubkg_service = get_ubkg_api_service()
     results = defaultdict(list)
@@ -426,7 +421,7 @@ def _validate_marker(req: CreateSenotypeRequest) -> tuple[dict, dict]:
             proteins.add(regmarker.marker.split(":")[-1])
         else:
             raise ValueError(
-                f"RegMarker '{regmarker.marker}' must start with 'HGNC:' or 'UNIPROTKB:'"
+                f"Regulated marker '{regmarker.marker}' must start with 'HGNC:' or 'UNIPROTKB:'"
             )
 
     # fetch gene and protein information, combine into a single dict
@@ -471,19 +466,19 @@ def _validate_marker(req: CreateSenotypeRequest) -> tuple[dict, dict]:
 
     for marker in req_markers:
         if marker not in all_info:
-            errors["characterizing_marker_set"].append(
-                f"Characterizing marker '{marker}' not found in UBKG"
+            errors["specified_marker_set"].append(
+                f"Specified marker '{marker}' not found in UBKG"
             )
             continue
-        results["characterizing_marker_set"].append(all_info[marker])
+        results["specified_marker_set"].append(all_info[marker])
 
     for regmarker in req_regmarkers:
         if regmarker.marker not in all_info:
-            errors["regulating_marker_set"].append(
+            errors["regulated_marker_set"].append(
                 f"Regulating marker '{regmarker.marker}' not found in UBKG"
             )
             continue
-        results["regulating_marker_set"].append(
+        results["regulated_marker_set"].append(
             {
                 "action": regmarker.action,
                 "marker": all_info[regmarker.marker],

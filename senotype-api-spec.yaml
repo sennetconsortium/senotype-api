@@ -12,9 +12,19 @@ info:
 servers:
   - url: "https://senotype.api.sennetconsortium.org"
 
+tags:
+  - name: Status
+    description: Health check endpoints
+  - name: Senotypes
+    description: CRUD operations for senotypes
+  - name: Valuesets
+    description: Valueset lookup endpoints
+
 paths:
   /status:
     get:
+      tags:
+        - Status
       summary: Health check
       operationId: getStatus
       responses:
@@ -31,6 +41,8 @@ paths:
 
   /senotypes:
     get:
+      tags:
+        - Senotypes
       summary: Get all senotypes
       operationId: getSenotypes
       description: >
@@ -66,6 +78,8 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
     post:
+      tags:
+        - Senotypes
       summary: Create a senotype
       operationId: createSenotype
       description: >
@@ -78,7 +92,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateSenotypeRequest"
+              $ref: "#/components/schemas/SenotypeRequest"
       responses:
         "201":
           description: Senotype created successfully
@@ -93,6 +107,8 @@ paths:
 
   /senotypes/{uuid}:
     get:
+      tags:
+        - Senotypes
       summary: Get a senotype by UUID
       operationId: getSenotype
       description: >
@@ -127,6 +143,8 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
     put:
+      tags:
+        - Senotypes
       summary: Update a senotype
       operationId: updateSenotype
       description: >
@@ -148,7 +166,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateSenotypeRequest"
+              $ref: "#/components/schemas/SenotypeRequest"
       responses:
         "200":
           description: Senotype updated successfully
@@ -164,6 +182,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
     delete:
+      tags:
+        - Senotypes
       summary: Delete a senotype
       operationId: deleteSenotype
       description: >
@@ -202,6 +222,8 @@ paths:
 
   /valuesets:
     get:
+      tags:
+        - Valuesets
       summary: Get valuesets
       operationId: getValuesets
       parameters:
@@ -314,12 +336,14 @@ components:
         lowerbound:
           type: number
           nullable: true
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           example: 18.5
         upperbound:
           type: number
           nullable: true
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           example: 30.0
 
     Age:
@@ -337,12 +361,14 @@ components:
         lowerbound:
           type: number
           nullable: true
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           example: 60
         upperbound:
           type: number
           nullable: true
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           example: 70
 
     Diagnosis:
@@ -358,7 +384,7 @@ components:
           type: string
           example: diabetes mellitus
 
-    RegMarker:
+    RegulatedMarker:
       type: object
       required:
         - action
@@ -371,19 +397,24 @@ components:
             - down_regulates
             - inconclusively_regulates
         marker:
-          type: string
           oneOf:
-            - pattern: '^HGNC:\d+$'
+            - type: string
+              pattern: '^HGNC:\d+$'
               description: HGNC gene identifier
-            - pattern: "^UNIPROTKB:[A-Z0-9]+$"
+            - type: string
+              pattern: "^UNIPROTKB:[A-Z0-9]+$"
               description: UniProtKB protein identifier
           example: HGNC:11027
 
-    CreateSenotypeRequest:
+    SenotypeRequest:
       type: object
       required:
         - title
         - description
+        - taxon
+        - organ
+        - cell_type
+        - hallmark
       properties:
         title:
           type: string
@@ -393,32 +424,37 @@ components:
           type: string
           minLength: 1
           example: This is an example senotype for testing purposes.
-        bmi:
-          oneOf:
-            - $ref: "#/components/schemas/BMI"
-            - type: "null"
-        age:
-          $ref: "#/components/schemas/Age"
-          nullable: true
         taxon:
           type: array
-          nullable: true
+          minItems: 1
           items:
             type: string
           example: ["NCBI:9606"]
         organ:
           type: array
-          nullable: true
+          minItems: 1
           items:
             type: string
           example: ["UBERON:0001066"]
         cell_type:
           type: array
-          nullable: true
+          minItems: 1
           items:
             type: string
             pattern: '^CL:\d+$'
           example: ["CL:0000507"]
+        hallmark:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          example: ["SENOTYPE_VS:C00209"]
+        bmi:
+          $ref: "#/components/schemas/BMI"
+          nullable: true
+        age:
+          $ref: "#/components/schemas/Age"
+          nullable: true
         microenvironment:
           type: array
           nullable: true
@@ -431,12 +467,6 @@ components:
           items:
             type: string
           example: ["SENOTYPE_VS:C00405"]
-        hallmark:
-          type: array
-          nullable: true
-          items:
-            type: string
-          example: ["SENOTYPE_VS:C00209"]
         assay:
           type: array
           nullable: true
@@ -475,22 +505,23 @@ components:
             type: string
             pattern: "^[a-f0-9]{32}$"
           example: ["73df6847495fcd61e4b6e5292ab2c9dc"]
-        characterizing_marker_set:
+        specified_marker_set:
           type: array
           nullable: true
           items:
-            type: string
             oneOf:
-              - pattern: '^HGNC:\d+$'
+              - type: string
+                pattern: '^HGNC:\d+$'
                 description: HGNC gene identifier
-              - pattern: "^UNIPROTKB:[A-Z0-9]+$"
+              - type: string
+                pattern: "^UNIPROTKB:[A-Z0-9]+$"
                 description: UniProtKB protein identifier
           example: ["HGNC:9561"]
-        regulating_marker_set:
+        regulated_marker_set:
           type: array
           nullable: true
           items:
-            $ref: "#/components/schemas/RegMarker"
+            $ref: "#/components/schemas/RegulatedMarker"
       example:
         title: Example Senotype
         description: This is an example senotype for testing purposes.
@@ -518,8 +549,8 @@ components:
         citation: ["PMID:41705430"]
         origin: ["RRID:scr_020638"]
         dataset: ["73df6847495fcd61e4b6e5292ab2c9dc"]
-        characterizing_marker_set: ["HGNC:9561"]
-        regulating_marker_set:
+        specified_marker_set: ["HGNC:9561"]
+        regulated_marker_set:
           - action: down_regulates
             marker: HGNC:11027
           - action: up_regulates

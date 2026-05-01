@@ -7,7 +7,7 @@ from common.database.senotypes import delete_senotype as delete_db_senotype
 from common.database.senotypes import find_senotype, find_senotypes, insert_senotype
 from common.database.senotypes import update_senotype as update_db_senotype
 from common.decorator import TokenInfo, require_globus_groups_token, validate_body
-from common.validation.senotype import CreateSenotypeRequest, validate_create_senotype_request
+from common.validation.senotype import SenotypeRequest, validate_senotype_request
 
 senotypes_bp = Blueprint("senotypes", __name__)
 
@@ -31,13 +31,13 @@ def get_senotype(uuid: str):
 
 @senotypes_bp.route("/senotypes", methods=["POST"])
 @require_globus_groups_token(required_group_name="senotype-edit")
-@validate_body(CreateSenotypeRequest)
-def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
+@validate_body(SenotypeRequest)
+def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
     # Validate in two steps:
     # 1. Validate general structure using validate_body decorator
     # 2. Perform requests against database and APIs to check values
     try:
-        res, err = validate_create_senotype_request(body, token_info)
+        res, err = validate_senotype_request(body, token_info)
         if err:
             return {"message": "Validation error", "errors": err}, 400
     except Exception as e:
@@ -86,8 +86,8 @@ def create_senotype(body: CreateSenotypeRequest, token_info: TokenInfo):
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["PUT"])
 @require_globus_groups_token(required_group_name="senotype-edit")
-@validate_body(CreateSenotypeRequest)
-def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInfo):
+@validate_body(SenotypeRequest)
+def update_senotype(uuid: str, body: SenotypeRequest, token_info: TokenInfo):
     # Check if user owns the senotype
     senotype = find_senotype(uuid)
     if senotype is None:
@@ -100,7 +100,7 @@ def update_senotype(uuid: str, body: CreateSenotypeRequest, token_info: TokenInf
     # 1. Validate general structure using validate_body decorator
     # 2. Perform requests against database and APIs to check values
     try:
-        res, err = validate_create_senotype_request(body, token_info)
+        res, err = validate_senotype_request(body, token_info)
         if err:
             return {"message": "Validation error", "errors": err}, 400
     except Exception as e:
