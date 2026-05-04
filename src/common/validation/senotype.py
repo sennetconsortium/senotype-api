@@ -16,6 +16,9 @@ from common.decorator import TokenInfo
 from common.validation import with_app_context
 
 CellTypeCode = Annotated[str, StringConstraints(pattern=r"^CL:\d+$")]  # cell types
+DatasetSenNetID = Annotated[
+    str, StringConstraints(pattern=r"^SNT[\d]{3}\.[A-Z]{4}\.[\d]{3}$")
+]  # datasets with sennet ids
 DatasetUUID = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]  # datasets
 HGNCCode = Annotated[str, StringConstraints(pattern=r"^HGNC:\d+$")]  # genes
 PMIDCode = Annotated[str, StringConstraints(pattern=r"^PMID:\d+$")]  # citations
@@ -96,7 +99,7 @@ class SenotypeRequest(BaseModel):
     diagnosis: Optional[list[Diagnosis]] = None
     citation: Optional[list[PMIDCode]] = None
     origin: Optional[list[str]] = None
-    dataset: Optional[list[DatasetUUID]] = None
+    dataset: Optional[list[DatasetUUID | DatasetSenNetID]] = None
     specified_marker_set: Optional[list[HGNCCode | UNIPROTKBCode]] = None
     regulated_marker_set: Optional[list[RegulatedMarker]] = None
 
