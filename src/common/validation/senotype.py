@@ -2,7 +2,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from requests import HTTPError
 
 from common.context import (
@@ -16,10 +16,8 @@ from common.decorator import TokenInfo
 from common.validation import with_app_context
 
 CellTypeCode = Annotated[str, StringConstraints(pattern=r"^CL:\d+$")]  # cell types
-DatasetSenNetID = Annotated[
-    str, StringConstraints(pattern=r"^SNT[\d]{3}\.[A-Z]{4}\.[\d]{3}$")
-]  # datasets with sennet ids
-DatasetUUID = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]  # datasets
+DatasetSenNetID = Annotated[str, StringConstraints(pattern=r"^SNT[\d]{3}\.[A-Z]{4}\.[\d]{3}$")]
+DatasetUUID = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]
 HGNCCode = Annotated[str, StringConstraints(pattern=r"^HGNC:\d+$")]  # genes
 PMIDCode = Annotated[str, StringConstraints(pattern=r"^PMID:\d+$")]  # citations
 UNIPROTKBCode = Annotated[str, StringConstraints(pattern=r"^UNIPROTKB:[A-Z0-9]+$")]  # proteins
@@ -77,31 +75,35 @@ class Diagnosis(BaseModel):
     code: str
     term: str
 
+    model_config = ConfigDict(frozen=True)  # make hashable for unique checks
+
 
 class RegulatedMarker(BaseModel):
     action: Literal["up_regulates", "down_regulates", "inconclusively_regulates"]
     marker: HGNCCode | UNIPROTKBCode
 
+    model_config = ConfigDict(frozen=True)  # make hashable for unique checks
+
 
 class SenotypeRequest(BaseModel):
     title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     description: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-    taxon: list[str] = Field(min_length=1)
-    organ: list[str] = Field(min_length=1)
-    cell_type: list[CellTypeCode] = Field(min_length=1)
-    hallmark: list[str] = Field(min_length=1)
+    taxon: set[str] = Field(min_length=1)
+    organ: set[str] = Field(min_length=1)
+    cell_type: set[CellTypeCode] = Field(min_length=1)
+    hallmark: set[str] = Field(min_length=1)
     bmi: Optional[BMI] = None
     age: Optional[Age] = None
-    microenvironment: Optional[list[str]] = None
-    inducer: Optional[list[str]] = None
-    assay: Optional[list[str]] = None
-    sex: Optional[list[str]] = None
-    diagnosis: Optional[list[Diagnosis]] = None
-    citation: Optional[list[PMIDCode]] = None
-    origin: Optional[list[str]] = None
-    dataset: Optional[list[DatasetUUID | DatasetSenNetID]] = None
-    specified_marker_set: Optional[list[HGNCCode | UNIPROTKBCode]] = None
-    regulated_marker_set: Optional[list[RegulatedMarker]] = None
+    microenvironment: Optional[set[str]] = None
+    inducer: Optional[set[str]] = None
+    assay: Optional[set[str]] = None
+    sex: Optional[set[str]] = None
+    diagnosis: Optional[set[Diagnosis]] = None
+    citation: Optional[set[PMIDCode]] = None
+    origin: Optional[set[str]] = None
+    dataset: Optional[set[DatasetUUID | DatasetSenNetID]] = None
+    specified_marker_set: Optional[set[HGNCCode | UNIPROTKBCode]] = None
+    regulated_marker_set: Optional[set[RegulatedMarker]] = None
 
 
 def validate_senotype_request(
@@ -364,8 +366,13 @@ def _validate_dataset(req: SenotypeRequest, token_info: TokenInfo) -> tuple[dict
     results = defaultdict(list)
     errors = defaultdict(list)
 
+    # dataset values need in depth uniqueness check since user can specify uuid or sennet_id
+    fetched_dataset_ids = set()
     if req.dataset:
         for ds_id in req.dataset:
+            if ds_id in fetched_dataset_ids:
+                continue  # skip to deduplicate dataset
+
             try:
                 res = entity_service.get_entity(ds_id, token=token_info.token.get_secret_value())
                 if res["entity_type"].lower() != "dataset":
@@ -379,6 +386,8 @@ def _validate_dataset(req: SenotypeRequest, token_info: TokenInfo) -> tuple[dict
                         "title": res["title"],
                     }
                 )
+                # handle both uuid and sennet_id for unique check
+                fetched_dataset_ids.update({res["uuid"], res["sennet_id"]})
             except HTTPError as e:
                 if e.response.status_code == 404:
                     errors["dataset"].append(f"Dataset '{ds_id}' not found in Entity API")
