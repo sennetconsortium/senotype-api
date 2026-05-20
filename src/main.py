@@ -5,7 +5,6 @@ import os
 from bson import CodecOptions
 from bson.codec_options import TypeRegistry
 from flask import Flask
-from globus_sdk import ConfidentialAppAuthClient
 from pymongo import MongoClient
 
 from common.config import AppConfig
@@ -39,11 +38,6 @@ def configure_logger(app: Flask):
 
 def configure_services(app: Flask, config: AppConfig):
     app.extensions["app_config"] = config
-
-    app.extensions["auth_client"] = ConfidentialAppAuthClient(
-        client_id=config.GLOBUS_APP_CLIENT_ID,
-        client_secret=config.GLOBUS_APP_CLIENT_SECRET.get_secret_value(),
-    )
 
     mongo_client = MongoClient(
         host=config.MONGO_HOST,

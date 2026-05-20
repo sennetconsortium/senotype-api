@@ -6,22 +6,29 @@ from common.context import get_search_api_service, get_uuid_api_service
 from common.database.senotypes import delete_senotype as delete_db_senotype
 from common.database.senotypes import find_senotype, find_senotypes, insert_senotype
 from common.database.senotypes import update_senotype as update_db_senotype
-from common.decorator import TokenInfo, require_globus_groups_token, validate_body
+from common.decorator import (
+    ALL_SENOTYPE_GROUPS,
+    SenotypeGroup,
+    TokenInfo,
+    require_any_senotype_group,
+    validate_body,
+)
 from common.validation.senotype import SenotypeRequest, validate_senotype_request
 
 senotypes_bp = Blueprint("senotypes", __name__)
 
 
 @senotypes_bp.route("/senotypes", methods=["GET"])
-@require_globus_groups_token(required_group_name="senotype-edit")
+@require_any_senotype_group(ALL_SENOTYPE_GROUPS)
 def get_senotypes():
     senotypes = find_senotypes()
     return {"senotypes": senotypes}, 200
 
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["GET"])
-@require_globus_groups_token(required_group_name="senotype-edit")
+@require_any_senotype_group(ALL_SENOTYPE_GROUPS)
 def get_senotype(uuid: str):
+    # Check if senotype exists
     senotype = find_senotype(uuid)
     if senotype is None:
         return {"message": "Senotype not found"}, 404
@@ -30,7 +37,7 @@ def get_senotype(uuid: str):
 
 
 @senotypes_bp.route("/senotypes", methods=["POST"])
-@require_globus_groups_token(required_group_name="senotype-edit")
+@require_any_senotype_group(ALL_SENOTYPE_GROUPS)
 @validate_body(SenotypeRequest)
 def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
     # Validate in two steps:
@@ -98,15 +105,20 @@ def create_senotype(body: SenotypeRequest, token_info: TokenInfo):
 
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["PUT"])
-@require_globus_groups_token(required_group_name="senotype-edit")
+@require_any_senotype_group([SenotypeGroup.CURATE, SenotypeGroup.EDIT])
 @validate_body(SenotypeRequest)
-def update_senotype(uuid: str, body: SenotypeRequest, token_info: TokenInfo):
-    # Check if user owns the senotype
+def update_senotype(
+    uuid: str, body: SenotypeRequest, token_info: TokenInfo, user_groups: list[SenotypeGroup]
+):
+    # Check if senotype exists
     senotype = find_senotype(uuid)
     if senotype is None:
         return {"message": "Senotype not found"}, 404
 
-    if senotype["created_by_user_sub"] != token_info.sub:
+    # Check if user owns the senotype or is in curate group
+    is_curator = SenotypeGroup.CURATE in user_groups
+    is_owner = senotype["created_by_user_sub"] == token_info.sub
+    if not is_curator and not is_owner:
         return {"message": "You do not have permission to update this senotype"}, 403
 
     # Validate in two steps:
@@ -162,16 +174,20 @@ def update_senotype(uuid: str, body: SenotypeRequest, token_info: TokenInfo):
 
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["DELETE"])
-@require_globus_groups_token(required_group_name="senotype-edit")
-def delete_senotype(uuid: str, token_info: TokenInfo):
-    # Check if user owns the senotype
+@require_any_senotype_group([SenotypeGroup.CURATE, SenotypeGroup.EDIT])
+def delete_senotype(uuid: str, token_info: TokenInfo, user_groups: list[SenotypeGroup]):
+    # Check if senotype exists
     senotype = find_senotype(uuid)
     if senotype is None:
         return {"message": "Senotype not found"}, 404
 
-    if senotype["created_by_user_sub"] != token_info.sub:
+    # Check if user owns the senotype or is in curate group
+    is_curator = SenotypeGroup.CURATE in user_groups
+    is_owner = senotype["created_by_user_sub"] == token_info.sub
+    if not is_curator and not is_owner:
         return {"message": "You do not have permission to delete this senotype"}, 403
 
+    # Delete the senotype from the database
     result = delete_db_senotype(uuid)
     if not result:
         return {"message": "Senotype not found"}, 404
