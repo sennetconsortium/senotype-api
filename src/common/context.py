@@ -1,12 +1,11 @@
 import logging
-from uuid import UUID
 
 from flask import current_app
-from globus_sdk import ConfidentialAppAuthClient
 from pymongo.database import Database
 
 from common.service.entity import EntityAPIService
 from common.service.eutils import EUtilsAPIService
+from common.service.ingest import IngestAPIService
 from common.service.scicrunch import SciCrunchAPIService
 from common.service.search import SearchAPIService
 from common.service.ubkg import UBKGAPIService
@@ -17,16 +16,8 @@ def get_logger() -> logging.Logger:
     return current_app.logger
 
 
-def get_auth_client() -> ConfidentialAppAuthClient:
-    return current_app.extensions["auth_client"]
-
-
 def get_mongo_db() -> Database:
     return current_app.extensions["mongo_db"]
-
-
-def get_globus_group_uuids() -> dict[str, UUID]:
-    return current_app.extensions["app_config"].GLOBUS_GROUP_UUIDS
 
 
 def get_search_api_service() -> SearchAPIService:
@@ -42,6 +33,11 @@ def get_ubkg_api_service() -> UBKGAPIService:
 def get_entity_api_service() -> EntityAPIService:
     base_url = str(current_app.extensions["app_config"].ENTITY_API_URL)
     return EntityAPIService(base_url=base_url)
+
+
+def get_ingest_api_service() -> IngestAPIService:
+    base_url = str(current_app.extensions["app_config"].INGEST_API_URL)
+    return IngestAPIService(base_url=base_url)
 
 
 def get_uuid_api_service() -> UUIDAPIService:

@@ -1,27 +1,48 @@
 import functools
 import inspect
+from enum import Enum
 from typing import Type
 
 from flask import request
-from globus_sdk import AccessTokenAuthorizer, GroupsClient
 from pydantic import BaseModel, SecretStr, ValidationError
+from requests import HTTPError
 
-from common.context import get_auth_client, get_globus_group_uuids
+from common.context import get_ingest_api_service
 
 
 class TokenInfo(BaseModel):
     email: str
-    groups: list[str] = []
     name: str
     sub: str
     username: str
     token: SecretStr
 
 
-GLOBUS_GROUPS_RESOURCE_SERVER = "groups.api.globus.org"
+class SenotypeGroup(str, Enum):
+    CURATE = "senotype_curate"
+    EDIT = "senotype_edit"
+    PUBLISH = "senotype_publish"
 
 
-def require_globus_groups_token(required_group_name: str | None = None):
+ALL_SENOTYPE_GROUPS: list[SenotypeGroup] = list(SenotypeGroup)
+
+
+def require_any_senotype_group(groups: SenotypeGroup | list[SenotypeGroup]):
+    """
+    Decorator that restricts a route to users belonging to at least one of the specified senotype
+    groups.
+
+    Validates the bearer token from the Authorization header against the Ingest API and checks the
+    user's group membership. If the decorated function accepts ``token_info``, it is populated with
+    the authenticated user's details. If it accepts ``senotype_groups``, it is populated with the
+    list of senotype groups the user belongs to (i.e. CURATE, EDIT, PUBLISH).
+
+    Parameters
+    ----------
+    groups : SenotypeGroup or list[SenotypeGroup]
+        One or more groups that the user must belong to in order to access the route.
+    """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -30,49 +51,49 @@ def require_globus_groups_token(required_group_name: str | None = None):
                 return {"message": "Missing or invalid Authorization header"}, 401
 
             token = auth.token
-            if not token or auth.type != "bearer":
+            if not token:
                 return {"message": "Missing token"}, 401
 
-            introspect = get_auth_client().oauth2_token_introspect(token)
+            required_groups = [groups] if isinstance(groups, SenotypeGroup) else list(groups)
 
-            if not introspect.get("active"):
-                return {"message": "Invalid or expired token"}, 401
+            ingest_service = get_ingest_api_service()
 
-            audiences = introspect.get("aud", [])
-            if GLOBUS_GROUPS_RESOURCE_SERVER not in audiences:
-                return {"message": "Token is not valid for Globus Groups"}, 403
+            try:
+                privs = ingest_service.get_senotype_privs(token)
+            except HTTPError as e:
+                if e.response is not None and e.response.status_code == 401:
+                    return {"message": "Invalid or expired token"}, 401
+                return {"message": "Failed to retrieve senotype privileges"}, 500
 
-            groups_client = GroupsClient(authorizer=AccessTokenAuthorizer(token))
-            groups = [g["id"] for g in groups_client.get_my_groups()]
+            user_groups = [g for g in SenotypeGroup if privs.get(f"has_{g.value}", False)]
 
-            token_info = TokenInfo(
-                email=introspect["email"],
-                name=introspect["name"],
-                groups=groups,
-                sub=introspect["sub"],
-                username=introspect["username"],
-                token=SecretStr(token),
-            )
-
-            # If a required group name is specified, check membership
-            if required_group_name:
-                globus_group_uuids = get_globus_group_uuids()
-                required_group_uuid = globus_group_uuids.get(required_group_name)
-                if not required_group_uuid:
-                    return {
-                        "message": f"Required group '{required_group_name}' is not configured"
-                    }, 500
-
-                if str(required_group_uuid) not in groups:
-                    return {
-                        "message": f"User is not a member of required group: {required_group_name}"
-                    }, 403
+            has_access = any(g in user_groups for g in required_groups)
+            if not has_access:
+                groups_str = ", ".join(g.value for g in required_groups)
+                return {
+                    "message": f"User does not have senotype group membership: {groups_str}"
+                }, 403
 
             sig = inspect.signature(func)
+
             if "token_info" in sig.parameters:
-                return func(*args, token_info=token_info, **kwargs)
-            else:
-                return func(*args, **kwargs)
+                try:
+                    token_data = ingest_service.get_token_info(token)
+                except HTTPError:
+                    return {"message": "Failed to validate token"}, 401
+
+                kwargs["token_info"] = TokenInfo(
+                    email=token_data["email"],
+                    name=token_data["name"],
+                    sub=token_data["sub"],
+                    username=token_data["username"],
+                    token=SecretStr(token),
+                )
+
+            if "user_groups" in sig.parameters:
+                kwargs["user_groups"] = user_groups
+
+            return func(*args, **kwargs)
 
         return wrapper
 
@@ -80,6 +101,19 @@ def require_globus_groups_token(required_group_name: str | None = None):
 
 
 def validate_body(model: Type[BaseModel]):
+    """
+    Decorator that parses and validates the JSON request body against a Pydantic model.
+
+    Requires the request ``Content-Type`` to be ``application/json``. If validation succeeds and
+    the decorated function accepts a ``body`` parameter, the parsed model instance is passed as that
+    argument.
+
+    Parameters
+    ----------
+    model : Type[BaseModel]
+        The Pydantic model class used to validate the request body.
+    """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -99,9 +133,9 @@ def validate_body(model: Type[BaseModel]):
 
             sig = inspect.signature(func)
             if "body" in sig.parameters:
-                return func(*args, body=parsed, **kwargs)
-            else:
-                return func(*args, **kwargs)
+                kwargs["body"] = parsed
+
+            return func(*args, **kwargs)
 
         return wrapper
 

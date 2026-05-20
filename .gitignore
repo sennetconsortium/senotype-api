@@ -12,6 +12,7 @@ __pycache__/
 # IDE
 .idea/
 .vscode/
+.ignore
 
 # Misc
 notes*
