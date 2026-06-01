@@ -457,24 +457,23 @@ def _validate_marker(req: SenotypeRequest) -> tuple[dict, dict]:
             }
         )
     if proteins:
-        # TODO: update this function when ubkg supports comma-separated list of protein ids
-        for protein_id in proteins:
-            try:
-                protein_info = ubkg_service.get_proteins(protein_id)
-            except HTTPError as e:
-                if e.response.status_code == 404:
-                    continue  # we'll handle missing proteins in the validation loop below
-                else:
-                    raise e
-
-            if len(protein_info) == 0:
-                continue
-            p = protein_info[0]
-            all_info[f"UNIPROTKB:{p['uniprotkb_id']}"] = {
-                "code": f"UNIPROTKB:{p['uniprotkb_id']}",
-                "term": p["entry_name"][0].strip(),  # a list in ubkg
-                "name": p["recommended_name"][0].strip(),  # a list in ubkg
+        try:
+            protein_info = ubkg_service.get_proteins(list(proteins))
+        except HTTPError as e:
+            if e.response.status_code == 404:
+                protein_info = []
+            else:
+                raise e
+        all_info.update(
+            {
+                f"UNIPROTKB:{p['uniprotkb_id']}": {
+                    "code": f"UNIPROTKB:{p['uniprotkb_id']}",
+                    "term": p["entry_name"][0].strip(),  # a list in ubkg
+                    "name": p["recommended_name"][0].strip(),  # a list in ubkg
+                }
+                for p in protein_info
             }
+        )
 
     for marker in req_markers:
         if marker not in all_info:
