@@ -18,7 +18,8 @@ from common.validation import with_app_context
 CellTypeCode = Annotated[str, StringConstraints(pattern=r"^CL:\d+$")]  # cell types
 DatasetSenNetID = Annotated[str, StringConstraints(pattern=r"^SNT[\d]{3}\.[A-Z]{4}\.[\d]{3}$")]
 DatasetUUID = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]
-HGNCCode = Annotated[str, StringConstraints(pattern=r"^HGNC:\d+$")]  # genes
+HGNCCode = Annotated[str, StringConstraints(pattern=r"^HGNC:\d+$")]  # human genes
+MGICode = Annotated[str, StringConstraints(pattern=r"^MGI:\d+$")]  # mouse genes
 PMIDCode = Annotated[str, StringConstraints(pattern=r"^PMID:\d+$")]  # citations
 UNIPROTKBCode = Annotated[str, StringConstraints(pattern=r"^UNIPROTKB:[A-Z0-9]+$")]  # proteins
 
@@ -80,7 +81,7 @@ class Diagnosis(BaseModel):
 
 class RegulatedMarker(BaseModel):
     action: Literal["up_regulates", "down_regulates", "inconclusively_regulates"]
-    marker: HGNCCode | UNIPROTKBCode
+    marker: HGNCCode | MGICode | UNIPROTKBCode
 
     model_config = ConfigDict(frozen=True)  # make hashable for unique checks
 
@@ -102,7 +103,7 @@ class SenotypeRequest(BaseModel):
     citation: Optional[set[PMIDCode]] = None
     origin: Optional[set[str]] = None
     dataset: Optional[set[DatasetUUID | DatasetSenNetID]] = None
-    specified_marker_set: Optional[set[HGNCCode | UNIPROTKBCode]] = None
+    specified_marker_set: Optional[set[HGNCCode | MGICode | UNIPROTKBCode]] = None
     regulated_marker_set: Optional[set[RegulatedMarker]] = None
 
 
@@ -416,31 +417,39 @@ def _validate_marker(req: SenotypeRequest) -> tuple[dict, dict]:
     results = defaultdict(list)
     errors = defaultdict(list)
 
-    genes = set()
+    hgnc_genes = set()
+    mgi_genes = set()
     proteins = set()
     for marker in req_markers:
         if marker.startswith("HGNC:"):
-            genes.add(marker.split(":")[-1])
+            hgnc_genes.add(marker.split(":")[-1])
+        elif marker.startswith("MGI:"):
+            mgi_genes.add(marker.split(":")[-1])
         elif marker.startswith("UNIPROTKB:"):
             proteins.add(marker.split(":")[-1])
         else:
-            raise ValueError(f"Marker '{marker}' must start with 'HGNC:' or 'UNIPROTKB:'")
+            # this should not happen due to the regex constraint
+            raise ValueError(f"Marker '{marker}' must start with 'HGNC:', 'MGI:', or 'UNIPROTKB:'")
 
     for regmarker in req_regmarkers:
         if regmarker.marker.startswith("HGNC:"):
-            genes.add(regmarker.marker.split(":")[-1])
+            hgnc_genes.add(regmarker.marker.split(":")[-1])
+        elif regmarker.marker.startswith("MGI:"):
+            mgi_genes.add(regmarker.marker.split(":")[-1])
         elif regmarker.marker.startswith("UNIPROTKB:"):
             proteins.add(regmarker.marker.split(":")[-1])
         else:
+            # this should not happen due to the regex constraint
             raise ValueError(
-                f"Regulated marker '{regmarker.marker}' must start with 'HGNC:' or 'UNIPROTKB:'"
+                f"Regulated marker '{regmarker.marker}' must start "
+                "with 'HGNC:', 'MGI:', or 'UNIPROTKB:'"
             )
 
     # fetch gene and protein information, combine into a single dict
     all_info = {}
-    if genes:
+    if hgnc_genes:
         try:
-            gene_info = ubkg_service.get_genes(list(genes))
+            gene_info = ubkg_service.get_genes(list(hgnc_genes), organism="human")
         except HTTPError as e:
             if e.response.status_code == 404:
                 gene_info = []
@@ -456,25 +465,42 @@ def _validate_marker(req: SenotypeRequest) -> tuple[dict, dict]:
                 for g in gene_info
             }
         )
-    if proteins:
-        # TODO: update this function when ubkg supports comma-separated list of protein ids
-        for protein_id in proteins:
-            try:
-                protein_info = ubkg_service.get_proteins(protein_id)
-            except HTTPError as e:
-                if e.response.status_code == 404:
-                    continue  # we'll handle missing proteins in the validation loop below
-                else:
-                    raise e
-
-            if len(protein_info) == 0:
-                continue
-            p = protein_info[0]
-            all_info[f"UNIPROTKB:{p['uniprotkb_id']}"] = {
-                "code": f"UNIPROTKB:{p['uniprotkb_id']}",
-                "term": p["entry_name"][0].strip(),  # a list in ubkg
-                "name": p["recommended_name"][0].strip(),  # a list in ubkg
+    if mgi_genes:
+        try:
+            gene_info = ubkg_service.get_genes(list(mgi_genes), organism="mouse")
+        except HTTPError as e:
+            if e.response.status_code == 404:
+                gene_info = []
+            else:
+                raise e
+        all_info.update(
+            {
+                f"MGI:{g['mgi_id']}": {
+                    "code": f"MGI:{g['mgi_id']}",
+                    "term": g["approved_symbol"].strip(),
+                    "name": g["approved_name"].strip(),
+                }
+                for g in gene_info
             }
+        )
+    if proteins:
+        try:
+            protein_info = ubkg_service.get_proteins(list(proteins))
+        except HTTPError as e:
+            if e.response.status_code == 404:
+                protein_info = []
+            else:
+                raise e
+        all_info.update(
+            {
+                f"UNIPROTKB:{p['uniprotkb_id']}": {
+                    "code": f"UNIPROTKB:{p['uniprotkb_id']}",
+                    "term": p["entry_name"][0].strip(),  # a list in ubkg
+                    "name": p["recommended_name"][0].strip(),  # a list in ubkg
+                }
+                for p in protein_info
+            }
+        )
 
     for marker in req_markers:
         if marker not in all_info:
