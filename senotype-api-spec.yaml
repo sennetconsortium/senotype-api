@@ -400,7 +400,10 @@ components:
           oneOf:
             - type: string
               pattern: '^HGNC:\d+$'
-              description: HGNC gene identifier
+              description: HGNC gene identifier (human)
+            - type: string
+              pattern: '^MGI:\d+$'
+              description: MGI gene identifier (mouse)
             - type: string
               pattern: "^UNIPROTKB:[A-Z0-9]+$"
               description: UniProtKB protein identifier
@@ -512,7 +515,10 @@ components:
             oneOf:
               - type: string
                 pattern: '^HGNC:\d+$'
-                description: HGNC gene identifier
+                description: HGNC gene identifier (human)
+              - type: string
+                pattern: '^MGI:\d+$'
+                description: MGI gene identifier (mouse)
               - type: string
                 pattern: "^UNIPROTKB:[A-Z0-9]+$"
                 description: UniProtKB protein identifier
