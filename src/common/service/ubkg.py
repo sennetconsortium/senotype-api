@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Optional, Union
 
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -33,12 +33,18 @@ class UBKGAPIService:
         response.raise_for_status()
         return response.json()
 
-    def get_genes(self, gene_ids: Union[list[str], str]) -> list[dict]:
+    def get_genes(
+        self,
+        gene_ids: Union[list[str], str],
+        organism: Optional[Literal["human", "mouse"]] = None,
+    ) -> list[dict]:
         if isinstance(gene_ids, list):
             url_ids = ",".join(gene_ids)
         else:
             url_ids = gene_ids
         url = f"{self._base_url}/genes/{url_ids}"
+        if organism:
+            url += f"?organism={organism}"
         res = self._session.get(url, timeout=SERVICE_TIMEOUT)
         res.raise_for_status()
         return res.json()
