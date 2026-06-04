@@ -32,7 +32,7 @@ jobs:
 
       - name: Copy mongo init scripts into container
         run: |
-          docker cp mongo-init/. ${{ job.services.mongodb.id }}:/docker-entrypoint-initdb.d/
+          docker cp tests/data/. ${{ job.services.mongodb.id }}:/docker-entrypoint-initdb.d/
 
       - name: Restart MongoDB to run init scripts
         run: |
