@@ -37,6 +37,13 @@ jobs:
       - name: Restart MongoDB to run init scripts
         run: |
           docker restart ${{ job.services.mongodb.id }}
+          docker exec ${{ job.services.mongodb.id }} mongosh --eval "
+            var start = new Date();
+            while (true) {
+              try { db.adminCommand('ping'); print('ready'); break; }
+              catch(e) { if (new Date() - start > 60000) throw e; sleep(1000); }
+            }
+          "
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
