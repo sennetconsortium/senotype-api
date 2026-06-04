@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: [3.13]
+
+    services:
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_DATABASE: sennet
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Copy mongo init scripts into container
+        run: |
+          docker cp mongo-init/. ${{ job.services.mongodb.id }}:/docker-entrypoint-initdb.d/
+
+      - name: Restart MongoDB to run init scripts
+        run: |
+          docker restart ${{ job.services.mongodb.id }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements.dev.txt
+
+      - name: Setup test config file
+        run: |
+          cp tests/config/app.test.cfg src/instance/app.cfg
+
+      - name: Test with pytest
+        run: |
+          pytest -vv -W ignore::DeprecationWarning
