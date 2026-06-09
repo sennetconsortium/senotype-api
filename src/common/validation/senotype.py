@@ -263,10 +263,12 @@ def _validate_ubkg_fields(req: SenotypeRequest) -> tuple[dict, dict]:
             errors["organ"].append(f"Organ '{code}' not found in UBKG")
             continue
         organ = organs[code]
+        category = organ.get("category") or {}
         results["organ"].append(
             {
                 "code": organ["organ_uberon"],
                 "term": organ["term"],
+                "category": category.get("term") or organ["term"],
             }
         )
 
