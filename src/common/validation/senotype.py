@@ -341,7 +341,14 @@ def _validate_origin(req: SenotypeRequest) -> tuple[dict, dict]:
 
     if req.origin:
         for rrid in req.origin:
-            res = scicrunch_service.get_origin(rrid)
+            try:
+                res = scicrunch_service.get_origin(rrid)
+            except HTTPError as e:
+                if e.response.status_code == 404:
+                    errors["origin"].append(f"Origin '{rrid}' not found in SciCrunch")
+                    continue
+                else:
+                    raise e
 
             hits = res.get("hits", {}).get("hits", [])
             if not hits:
