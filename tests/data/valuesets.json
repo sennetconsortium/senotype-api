@@ -1,0 +1,370 @@
+[
+  {
+    "predicate_iri": "http://purl.obolibrary.org/obo/RO_0002162",
+    "predicate_term": "taxon",
+    "code": "NCBI:9606",
+    "term": "human"
+  },
+  {
+    "predicate_iri": "http://purl.obolibrary.org/obo/RO_0002162",
+    "predicate_term": "taxon",
+    "code": "NCBI:10088",
+    "term": "mouse"
+  },
+  {
+    "predicate_iri": "http://purl.obolibrary.org/obo/RO_0001025",
+    "predicate_term": "located_in",
+    "code": "UBERON:0002048",
+    "term": "lung"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00201",
+    "term": "Resistance to apoptosis"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00202",
+    "term": "Senescence associated secretory phenotype (SASP)"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00203",
+    "term": "Increased lysosomal content"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00204",
+    "term": "Metabolic adaptions"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00205",
+    "term": "Changes in morphology"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00206",
+    "term": "Cell cycle arrest"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00207",
+    "term": "Cell surface markers"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00208",
+    "term": "DNA damage response"
+  },
+  {
+    "predicate_term": "hallmark",
+    "code": "SENOTYPE_VS:C00209",
+    "term": "Nuclear changes"
+  },
+  {
+    "predicate_term": "microenvironment",
+    "code": "SENOTYPE_VS:C00300",
+    "term": "Secondary Senescence"
+  },
+  {
+    "predicate_term": "microenvironment",
+    "code": "SENOTYPE_VS:C00301",
+    "term": "Proximity to Blood Vessel"
+  },
+  {
+    "predicate_term": "microenvironment",
+    "code": "SENOTYPE_VS:C00302",
+    "term": "Proximity to Lymphatic"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00401",
+    "term": "Radiation"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00402",
+    "term": "DNA damage (genetic)"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00403",
+    "term": "DNA damage (pharmacologic)"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00404",
+    "term": "Protein Instability"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00405",
+    "term": "Trauma"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00406",
+    "term": "Developmental"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00407",
+    "term": "Replicative (high passage)"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00408",
+    "term": "Telomeric Stress (genetic)"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00409",
+    "term": "Telomeric Stress (pharmacological"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00410",
+    "term": "Oncogene-induced"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00411",
+    "term": "Infection"
+  },
+  {
+    "predicate_term": "inducer",
+    "code": "SENOTYPE_VS:C00412",
+    "term": "Diet"
+  },
+  {
+    "predicate_term": "context",
+    "code": "SNOMEDCT_US:397669002",
+    "term": "age"
+  },
+  {
+    "predicate_term": "context",
+    "code": "SNOMEDCT_US:60621009",
+    "term": "BMI"
+  },
+  {
+    "predicate_term": "sex",
+    "code": "SNOMEDCT_US:248152002",
+    "term": "Female"
+  },
+  {
+    "predicate_term": "sex",
+    "code": "SNOMEDCT_US:248153007",
+    "term": "Male"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00500",
+    "term": "2D Imaging Mass Cytometry"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00501",
+    "term": "3D Imaging Mass Cytometry"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00502",
+    "term": "10X Multiome"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00503",
+    "term": "Auto-fluorescence Microscopy"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00504",
+    "term": "Bulk ATACseq"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00505",
+    "term": "Bulk RNAseq"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00506",
+    "term": "Capture bead RNAseq (10x Genomics v3)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00507",
+    "term": "Cell DIVE"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00508",
+    "term": "CODEX"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00509",
+    "term": "DESI"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00510",
+    "term": "H&E Stained Microscopy"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00511",
+    "term": "Label-free LC-MS/MS"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00512",
+    "term": "LC-MS"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00513",
+    "term": "LC-MS Bottom Up"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00514",
+    "term": "LC-MS Top Down"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00515",
+    "term": "Light Sheet Microscopy"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00516",
+    "term": "MALDI IMS"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00517",
+    "term": "MS Lipidomics"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00518",
+    "term": "Multiplex Ion Beam Imaging"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00519",
+    "term": "NanoDESI"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00520",
+    "term": "PAS Stained Microscopy"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00521",
+    "term": "PhenoCycler"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00522",
+    "term": "sciATACseq"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00523",
+    "term": "sciRNAseq"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00524",
+    "term": "scRNAseq (10x Genomics v2)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00525",
+    "term": "scRNAseq (10x Genomics v3)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00526",
+    "term": "seqFISH"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00527",
+    "term": "Slide-seq"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00528",
+    "term": "SNAREseq2"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00529",
+    "term": "SNARE-seq2"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00530",
+    "term": "snATACseq-multiome"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00531",
+    "term": "snATACseq"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00532",
+    "term": "snATACseq (SNARE-seq2)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00533",
+    "term": "snRNAseq (10x Genomics v2)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00534",
+    "term": "snRNAseq (10x Genomics v3)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00535",
+    "term": "snRNAseq (SNARE-seq2)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00536",
+    "term": "TMT LC-MS"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00537",
+    "term": "Visium (no probes)"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00538",
+    "term": "Whole Genome Sequencing"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00539",
+    "term": "Xenium"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00540",
+    "term": "CosMx Transcriptomics"
+  },
+  {
+    "predicate_term": "assay",
+    "code": "SENOTYPE_VS:C00541",
+    "term": "CosMx Proteomics"
+  }
+]
