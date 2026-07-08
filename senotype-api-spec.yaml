@@ -76,6 +76,16 @@ paths:
             minimum: 0
             default: 0
           description: Number of senotypes to skip before collecting the result set
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["asc", "desc"]
+            default: "asc"
+          description: >
+            Sort direction applied to senotypes by creation time (with UUID
+            as a tiebreaker) before pagination is applied
       responses:
         "200":
           description: List of senotypes
@@ -368,6 +378,11 @@ components:
           type: integer
           description: Number of senotypes skipped before this response's result set
           example: 0
+        order:
+          type: string
+          enum: ["asc", "desc"]
+          description: Sort direction applied before pagination
+          example: "asc"
 
     BMI:
       type: object

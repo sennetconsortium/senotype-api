@@ -20,6 +20,7 @@ senotypes_bp = Blueprint("senotypes", __name__)
 
 DEFAULT_SENOTYPES_LIMIT = 25
 MAX_SENOTYPES_LIMIT = 100
+VALID_SENOTYPES_ORDERS = ("asc", "desc")
 
 
 @senotypes_bp.route("/senotypes", methods=["GET"])
@@ -31,18 +32,23 @@ def get_senotypes():
     except ValueError:
         return {"message": "limit and offset must be integers"}, 400
 
+    order = request.args.get("order", "asc")
+
     if limit < 1 or limit > MAX_SENOTYPES_LIMIT:
         return {"message": f"limit must be between 1 and {MAX_SENOTYPES_LIMIT}"}, 400
     if offset < 0:
         return {"message": "offset must be non-negative"}, 400
+    if order not in VALID_SENOTYPES_ORDERS:
+        return {"message": f"order must be one of: {', '.join(VALID_SENOTYPES_ORDERS)}"}, 400
 
-    senotypes, total = find_senotypes(limit=limit, offset=offset)
+    senotypes, total = find_senotypes(limit=limit, offset=offset, order=order)
     return {
         "senotypes": senotypes,
         "pagination": {
             "total": total,
             "limit": limit,
             "offset": offset,
+            "order": order,
         },
     }, 200
 
