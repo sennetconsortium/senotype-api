@@ -1,10 +1,22 @@
+import pymongo
+
 from common.database import get_collection
 
 
-def find_senotypes(limit: int | None = None, offset: int = 0) -> tuple[list[dict], int]:
+def find_senotypes(
+    limit: int | None = None,
+    offset: int = 0,
+    order: str = "asc",
+) -> tuple[list[dict], int]:
     collection = get_collection("senotypes")
     total = collection.count_documents({})
-    cursor = collection.find({}, {"_id": 0}).skip(offset)  # exclude the MongoDB _id field
+
+    direction = pymongo.ASCENDING if order == "asc" else pymongo.DESCENDING
+    cursor = (
+        collection.find({}, {"_id": 0})  # exclude the MongoDB _id field
+        .sort([("created_timestamp", direction), ("uuid", direction)])
+        .skip(offset)
+    )
     if limit is not None:
         cursor = cursor.limit(limit)
     docs = [doc for doc in cursor]
