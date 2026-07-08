@@ -14,6 +14,8 @@ __pycache__/
 .idea/
 .vscode/
 .ignore
+pyrightconfig.json
+*.lua
 
 # Misc
 notes*
