@@ -46,8 +46,8 @@ paths:
       summary: Get all senotypes
       operationId: getSenotypes
       description: >
-        Requires the authenticated user to be a member of the
-        `senotype-edit` Globus group.
+        Requires the authenticated user to be a member of at least one of the
+        `senotype-curate`, `senotype-edit`, or `senotype-publish` Globus groups.
       security:
         - bearerAuth: []
       parameters:
@@ -104,8 +104,8 @@ paths:
       summary: Create a senotype
       operationId: createSenotype
       description: >
-        Requires the authenticated user to be a member of the
-        `senotype-edit` Globus group.
+        Requires the authenticated user to be a member of at least one of the
+        `senotype-curate`, `senotype-edit`, or `senotype-publish` Globus groups.
       security:
         - bearerAuth: []
       requestBody:
@@ -133,8 +133,8 @@ paths:
       summary: Get a senotype by UUID
       operationId: getSenotype
       description: >
-        Requires the authenticated user to be a member of the
-        `senotype-edit` Globus group.
+        Requires the authenticated user to be a member of at least one of the
+        `senotype-curate`, `senotype-edit`, or `senotype-publish` Globus groups.
       security:
         - bearerAuth: []
       parameters:
@@ -170,8 +170,9 @@ paths:
       operationId: updateSenotype
       description: >
         Requires the authenticated user to be a member of the
-        `senotype-edit` Globus group. The user must also be the
-        original creator of the senotype.
+        `senotype-curate` or `senotype-edit` Globus group. Members of
+        `senotype-curate` may update any senotype; members of
+        `senotype-edit` may only update senotypes they created.
       security:
         - bearerAuth: []
       parameters:
@@ -209,8 +210,9 @@ paths:
       operationId: deleteSenotype
       description: >
         Requires the authenticated user to be a member of the
-        `senotype-edit` Globus group. The user must also be the
-        original creator of the senotype.
+        `senotype-curate` or `senotype-edit` Globus group. Members of
+        `senotype-curate` may delete any senotype; members of
+        `senotype-edit` may only delete senotypes they created.
       security:
         - bearerAuth: []
       parameters:
@@ -288,9 +290,10 @@ components:
       type: http
       scheme: bearer
       description: >
-        Globus groups bearer token. For write operations (POST, PUT, DELETE),
-        the token must belong to a user who is a member of the
-        `senotype-edit` Globus group.
+        Globus groups bearer token. Different operations require membership
+        in one or more of the `senotype-curate`, `senotype-edit`, or
+        `senotype-publish` Globus groups; see each operation's description
+        for the specific requirements.
 
   responses:
     ValidationError:
@@ -550,9 +553,14 @@ components:
           type: array
           nullable: true
           items:
-            type: string
-            pattern: "^[a-f0-9]{32}$"
-          example: ["73df6847495fcd61e4b6e5292ab2c9dc"]
+            oneOf:
+              - type: string
+                pattern: "^[a-f0-9]{32}$"
+                description: Dataset UUID
+              - type: string
+                pattern: '^SNT\d{3}\.[A-Z]{4}\.\d{3}$'
+                description: Dataset SenNet ID
+          example: ["73df6847495fcd61e4b6e5292ab2c9dc", "SNT123.ABCD.456"]
         specified_marker_set:
           type: array
           nullable: true
@@ -599,7 +607,7 @@ components:
             term: diabetes mellitus
         citation: ["PMID:41705430"]
         origin: ["RRID:scr_020638"]
-        dataset: ["73df6847495fcd61e4b6e5292ab2c9dc"]
+        dataset: ["73df6847495fcd61e4b6e5292ab2c9dc", "SNT123.ABCD.456"]
         specified_marker_set: ["HGNC:9561"]
         regulated_marker_set:
           - action: down_regulates
