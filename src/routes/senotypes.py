@@ -18,11 +18,33 @@ from common.validation.senotype import SenotypeRequest, validate_senotype_reques
 senotypes_bp = Blueprint("senotypes", __name__)
 
 
+DEFAULT_SENOTYPES_LIMIT = 25
+MAX_SENOTYPES_LIMIT = 100
+
+
 @senotypes_bp.route("/senotypes", methods=["GET"])
 @require_any_senotype_group(ALL_SENOTYPE_GROUPS)
 def get_senotypes():
-    senotypes = find_senotypes()
-    return {"senotypes": senotypes}, 200
+    try:
+        limit = int(request.args.get("limit", DEFAULT_SENOTYPES_LIMIT))
+        offset = int(request.args.get("offset", 0))
+    except ValueError:
+        return {"message": "limit and offset must be integers"}, 400
+
+    if limit < 1 or limit > MAX_SENOTYPES_LIMIT:
+        return {"message": f"limit must be between 1 and {MAX_SENOTYPES_LIMIT}"}, 400
+    if offset < 0:
+        return {"message": "offset must be non-negative"}, 400
+
+    senotypes, total = find_senotypes(limit=limit, offset=offset)
+    return {
+        "senotypes": senotypes,
+        "pagination": {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        },
+    }, 200
 
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["GET"])

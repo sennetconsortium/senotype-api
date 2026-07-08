@@ -59,6 +59,23 @@ paths:
             enum: ["true", "false"]
             default: "true"
           description: Whether to return the full senotype objects
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          description: Maximum number of senotypes to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of senotypes to skip before collecting the result set
       responses:
         "200":
           description: List of senotypes
@@ -71,6 +88,10 @@ paths:
                     type: array
                     items:
                       type: object
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -289,6 +310,14 @@ components:
               errors:
                 taxon: ["Valueset 'NCBI:9999' not found in valuesets"]
                 organ: ["Organ 'UBERON:0000000' not found in UBKG"]
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "limit must be between 1 and 100"
     Unauthorized:
       description: Missing or invalid token
       content:
@@ -320,6 +349,22 @@ components:
       properties:
         error:
           type: string
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of senotypes matching the query
+          example: 137
+        limit:
+          type: integer
+          description: Maximum number of senotypes returned in this response
+          example: 25
+        offset:
+          type: integer
+          description: Number of senotypes skipped before this response's result set
+          example: 0
 
     BMI:
       type: object
