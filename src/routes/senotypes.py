@@ -22,6 +22,42 @@ DEFAULT_SENOTYPES_LIMIT = 25
 MAX_SENOTYPES_LIMIT = 100
 VALID_SENOTYPES_ORDERS = ("asc", "desc")
 
+SENOTYPE_METADATA_FIELDS = {
+    "uuid",
+    "sennet_id",
+    "created_by_user_displayname",
+    "created_by_user_email",
+    "created_by_user_sub",
+    "created_timestamp",
+    "last_modified_user_displayname",
+    "last_modified_user_email",
+    "last_modified_user_sub",
+    "last_modified_timestamp",
+}
+VALID_SENOTYPE_FIELDS = set(SenotypeRequest.model_fields.keys()) | SENOTYPE_METADATA_FIELDS
+
+
+def _parse_fields_param() -> tuple[list[str] | None, tuple[dict, int] | None]:
+    # Parse the fields query parameter
+    fields_param = request.args.get("fields")
+    if not fields_param:
+        return None, None
+
+    # Split the fields by comma and strip whitespace, validate against the set of valid fields
+    fields = [f.strip() for f in fields_param.split(",") if f.strip()]
+    invalid = set(fields) - VALID_SENOTYPE_FIELDS
+    if invalid:
+        return None, (
+            {"message": f"Invalid field(s) requested: {', '.join(sorted(invalid))}"},
+            400,
+        )
+
+    # Always include uuid
+    if "uuid" not in fields:
+        fields.append("uuid")
+
+    return fields, None
+
 
 @senotypes_bp.route("/senotypes", methods=["GET"])
 @require_any_senotype_group(ALL_SENOTYPE_GROUPS)
@@ -41,7 +77,11 @@ def get_senotypes():
     if order not in VALID_SENOTYPES_ORDERS:
         return {"message": f"order must be one of: {', '.join(VALID_SENOTYPES_ORDERS)}"}, 400
 
-    senotypes, total = find_senotypes(limit=limit, offset=offset, order=order)
+    fields, err = _parse_fields_param()
+    if err:
+        return err
+
+    senotypes, total = find_senotypes(limit=limit, offset=offset, order=order, fields=fields)
     return {
         "senotypes": senotypes,
         "pagination": {
@@ -56,8 +96,12 @@ def get_senotypes():
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["GET"])
 @require_any_senotype_group(ALL_SENOTYPE_GROUPS)
 def get_senotype(uuid: str):
+    fields, err = _parse_fields_param()
+    if err:
+        return err
+
     # Check if senotype exists
-    senotype = find_senotype(uuid)
+    senotype = find_senotype(uuid, fields=fields)
     if senotype is None:
         return {"message": "Senotype not found"}, 404
 
