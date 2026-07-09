@@ -64,7 +64,7 @@ def update_senotype(uuid: str, senotype: dict) -> dict | None:
     return doc
 
 
-def delete_senotype(sennet_id: str) -> bool:
+def delete_senotype(uuid: str) -> bool:
     collection = get_collection("senotypes")
-    result = collection.delete_one({"sennet_id": sennet_id})
+    result = collection.delete_one({"uuid": uuid})
     return result.deleted_count > 0
