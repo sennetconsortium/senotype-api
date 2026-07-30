@@ -20,7 +20,6 @@ DatasetSenNetID = Annotated[str, StringConstraints(pattern=r"^SNT[\d]{3}\.[A-Z]{
 DatasetUUID = Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{32}$")]
 HGNCCode = Annotated[str, StringConstraints(pattern=r"^HGNC:\d+$")]  # human genes
 MGICode = Annotated[str, StringConstraints(pattern=r"^MGI:\d+$")]  # mouse genes
-PMIDCode = Annotated[str, StringConstraints(pattern=r"^PMID:\d+$")]  # citations
 UNIPROTKBCode = Annotated[str, StringConstraints(pattern=r"^UNIPROTKB:[A-Z0-9]+$")]  # proteins
 
 
@@ -100,7 +99,7 @@ class SenotypeRequest(BaseModel):
     assay: Optional[set[str]] = None
     sex: Optional[set[str]] = None
     diagnosis: Optional[set[Diagnosis]] = None
-    citation: Optional[set[PMIDCode]] = None
+    citation: Optional[set[str]] = None
     origin: Optional[set[str]] = None
     dataset: Optional[set[DatasetUUID | DatasetSenNetID]] = None
     specified_marker_set: Optional[set[HGNCCode | MGICode | UNIPROTKBCode]] = None
@@ -314,8 +313,8 @@ def _validate_citation(req: SenotypeRequest) -> tuple[dict, dict]:
     errors = defaultdict(list)
 
     if req.citation:
-        # PD
-        citation_ids = [c.split(":")[-1] for c in req.citation]
+        # strip "PMID:" prefix if it exists
+        citation_ids = list({c.removeprefix("PMID:") for c in req.citation})
         citations = get_eutils_api_service().get_citations(citation_ids).get("result", {})
 
         for pmid in req.citation:
