@@ -51,14 +51,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: return_dict
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: ["true", "false"]
-            default: "true"
-          description: Whether to return the full senotype objects
         - name: limit
           in: query
           required: false
@@ -86,6 +78,7 @@ paths:
           description: >
             Sort direction applied to senotypes by creation time (with UUID
             as a tiebreaker) before pagination is applied
+        - $ref: "#/components/parameters/FieldsParam"
       responses:
         "200":
           description: List of senotypes
@@ -118,6 +111,15 @@ paths:
         `senotype-curate`, `senotype-edit`, or `senotype-publish` Globus groups.
       security:
         - bearerAuth: []
+      parameters:
+        - name: return_dict
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+            default: "true"
+          description: Whether to return the full created senotype object
       requestBody:
         required: true
         content:
@@ -127,6 +129,24 @@ paths:
       responses:
         "201":
           description: Senotype created successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SenotypeResponse"
+                  - $ref: "#/components/schemas/MessageResponse"
+              examples:
+                fullObject:
+                  summary: return_dict=true (default)
+                  value:
+                    senotype:
+                      uuid: 73df6847495fcd61e4b6e5292ab2c9dc
+                      sennet_id: SNT123.ABCD.456
+                      title: Example Senotype
+                messageOnly:
+                  summary: return_dict=false
+                  value:
+                    message: Senotype created
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":
@@ -155,6 +175,7 @@ paths:
             type: string
             pattern: "^[a-f0-9]{32}$"
             example: 73df6847495fcd61e4b6e5292ab2c9dc
+        - $ref: "#/components/parameters/FieldsParam"
       responses:
         "200":
           description: Senotype found
@@ -165,6 +186,8 @@ paths:
                 properties:
                   senotype:
                     type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -193,6 +216,14 @@ paths:
             type: string
             pattern: "^[a-f0-9]{32}$"
             example: 73df6847495fcd61e4b6e5292ab2c9dc
+        - name: return_dict
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+            default: "true"
+          description: Whether to return the full updated senotype object
       requestBody:
         required: true
         content:
@@ -202,6 +233,24 @@ paths:
       responses:
         "200":
           description: Senotype updated successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SenotypeResponse"
+                  - $ref: "#/components/schemas/MessageResponse"
+              examples:
+                fullObject:
+                  summary: return_dict=true (default)
+                  value:
+                    senotype:
+                      uuid: 73df6847495fcd61e4b6e5292ab2c9dc
+                      sennet_id: SNT123.ABCD.456
+                      title: Example Senotype
+                messageOnly:
+                  summary: return_dict=false
+                  value:
+                    message: Senotype updated
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":
@@ -305,6 +354,20 @@ components:
         `senotype-publish` Globus groups; see each operation's description
         for the specific requirements.
 
+  parameters:
+    FieldsParam:
+      name: fields
+      in: query
+      required: false
+      schema:
+        type: string
+      description: >
+        Comma-separated list of top-level senotype fields to return
+        (e.g. `fields=title,taxon,organ`). If omitted, the full senotype
+        object is returned. The `uuid` field is always included in the
+        response regardless of whether it is specified.
+      example: "title,taxon,organ"
+
   responses:
     ValidationError:
       description: Validation error
@@ -362,6 +425,24 @@ components:
       properties:
         error:
           type: string
+
+    SenotypeResponse:
+      type: object
+      properties:
+        senotype:
+          type: object
+      description: >
+        Returned when `return_dict=true` (the default). Contains the full
+        senotype object as stored after the create or update operation.
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      description: >
+        Returned when `return_dict=false`. Confirms the operation succeeded
+        without echoing back the senotype object.
 
     Pagination:
       type: object

@@ -1,4 +1,4 @@
-FROM sennet/api-base-image:1.4.2
+FROM sennet/api-base-image:1.4.3
 
 LABEL description="SenNet Senotype API Service"
 
