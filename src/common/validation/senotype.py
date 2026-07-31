@@ -23,52 +23,38 @@ MGICode = Annotated[str, StringConstraints(pattern=r"^MGI:\d+$")]  # mouse genes
 UNIPROTKBCode = Annotated[str, StringConstraints(pattern=r"^UNIPROTKB:[A-Z0-9]+$")]  # proteins
 
 
-class BMI(BaseModel):
-    value: float | int
+class BoundedMeasurement(BaseModel):
+    value: float | int = Field(ge=0)
+    lowerbound: Optional[float | int] = Field(default=None, ge=0)
+    upperbound: Optional[float | int] = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def check_bounds(self) -> "BoundedMeasurement":
+        lb = self.lowerbound
+        ub = self.upperbound
+
+        if self.value == 0 and lb == 0 and ub == 0:
+            return self
+
+        if lb is not None and ub is not None:
+            if lb >= ub:
+                raise ValueError(f"lowerbound {lb} must be less than upperbound {ub}")
+
+        if lb is not None and self.value < lb:
+            raise ValueError(f"value {self.value} must be >= lowerbound {lb}")
+
+        if ub is not None and self.value > ub:
+            raise ValueError(f"value {self.value} must be <= upperbound {ub}")
+
+        return self
+
+
+class BMI(BoundedMeasurement):
     unit: Literal["kg/m^2"]
-    lowerbound: Optional[float | int] = Field(default=None, gt=0)
-    upperbound: Optional[float | int] = Field(default=None, gt=0)
-
-    @model_validator(mode="after")
-    def check_bounds(self) -> "BMI":
-        lb = self.lowerbound
-        ub = self.upperbound
-
-        if lb is not None and ub is not None:
-            if lb >= ub:
-                raise ValueError(f"lowerbound {lb} must be less than upperbound {ub}")
-
-        if lb is not None and self.value < lb:
-            raise ValueError(f"value {self.value} must be >= lowerbound {lb}")
-
-        if ub is not None and self.value > ub:
-            raise ValueError(f"value {self.value} must be <= upperbound {ub}")
-
-        return self
 
 
-class Age(BaseModel):
-    value: float | int
+class Age(BoundedMeasurement):
     unit: Literal["year"]
-    lowerbound: Optional[float | int] = Field(default=None, gt=0)
-    upperbound: Optional[float | int] = Field(default=None, gt=0)
-
-    @model_validator(mode="after")
-    def check_bounds(self) -> "Age":
-        lb = self.lowerbound
-        ub = self.upperbound
-
-        if lb is not None and ub is not None:
-            if lb >= ub:
-                raise ValueError(f"lowerbound {lb} must be less than upperbound {ub}")
-
-        if lb is not None and self.value < lb:
-            raise ValueError(f"value {self.value} must be >= lowerbound {lb}")
-
-        if ub is not None and self.value > ub:
-            raise ValueError(f"value {self.value} must be <= upperbound {ub}")
-
-        return self
 
 
 class Diagnosis(BaseModel):
