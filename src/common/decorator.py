@@ -140,3 +140,42 @@ def validate_body(model: Type[BaseModel]):
         return wrapper
 
     return decorator
+
+
+def validate_query_params(model: Type[BaseModel]):
+    """
+    Decorator that parses and validates the request's query string against a Pydantic model.
+
+    If validation succeeds and the decorated function accepts a ``query_params`` parameter, the
+    parsed model instance is passed as that argument.
+
+    Parameters
+    ----------
+    model : Type[BaseModel]
+        The Pydantic model class used to validate the query parameters. All fields should have
+        defaults, since an empty/missing query string must still validate.
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                parsed = model.model_validate(request.args.to_dict())
+            except ValidationError as e:
+                errors = {}
+                for err in e.errors():
+                    field = str(err["loc"][0]) if err["loc"] else "query"
+                    msg = err["msg"]
+                    msg = msg.removeprefix("Value error, ")
+                    errors.setdefault(field, []).append(msg)
+                return {"message": "Validation error", "errors": errors}, 400
+
+            sig = inspect.signature(func)
+            if "query_params" in sig.parameters:
+                kwargs["query_params"] = parsed
+
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

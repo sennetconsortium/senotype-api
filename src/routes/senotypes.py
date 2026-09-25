@@ -1,10 +1,17 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from flask import Blueprint, current_app, request
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from common.context import get_search_api_service, get_uuid_api_service
 from common.database.senotypes import delete_senotype as delete_db_senotype
-from common.database.senotypes import find_senotype, find_senotypes, insert_senotype
+from common.database.senotypes import (
+    find_senotype,
+    find_senotypes,
+    find_senotypes_by_dataset,
+    insert_senotype,
+)
 from common.database.senotypes import update_senotype as update_db_senotype
 from common.decorator import (
     ALL_SENOTYPE_GROUPS,
@@ -12,6 +19,7 @@ from common.decorator import (
     TokenInfo,
     require_any_senotype_group,
     validate_body,
+    validate_query_params,
 )
 from common.validation.senotype import SenotypeRequest, validate_senotype_request
 
@@ -20,7 +28,6 @@ senotypes_bp = Blueprint("senotypes", __name__)
 
 DEFAULT_SENOTYPES_LIMIT = 25
 MAX_SENOTYPES_LIMIT = 100
-VALID_SENOTYPES_ORDERS = ("asc", "desc")
 
 SENOTYPE_METADATA_FIELDS = {
     "uuid",
@@ -37,71 +44,82 @@ SENOTYPE_METADATA_FIELDS = {
 VALID_SENOTYPE_FIELDS = set(SenotypeRequest.model_fields.keys()) | SENOTYPE_METADATA_FIELDS
 
 
-def _parse_fields_param() -> tuple[list[str] | None, tuple[dict, int] | None]:
-    # Parse the fields query parameter
-    fields_param = request.args.get("fields")
-    if not fields_param:
-        return None, None
+class SenotypeFieldsParams(BaseModel):
+    """Query params shared by every senotype GET endpoint."""
 
-    # Split the fields by comma and strip whitespace, validate against the set of valid fields
-    fields = [f.strip() for f in fields_param.split(",") if f.strip()]
-    invalid = set(fields) - VALID_SENOTYPE_FIELDS
-    if invalid:
-        return None, (
-            {"message": f"Invalid field(s) requested: {', '.join(sorted(invalid))}"},
-            400,
-        )
+    model_config = ConfigDict(extra="forbid")
 
-    # Always include uuid
-    if "uuid" not in fields:
-        fields.append("uuid")
+    fields: str | None = None
 
-    return fields, None
+    @field_validator("fields")
+    @classmethod
+    def _validate_fields(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        requested = {f.strip() for f in v.split(",") if f.strip()}
+        invalid = requested - VALID_SENOTYPE_FIELDS
+        if invalid:
+            raise ValueError(f"Invalid field(s) requested: {', '.join(sorted(invalid))}")
+        return v
+
+    @property
+    def fields_list(self) -> list[str] | None:
+        if not self.fields:
+            return None
+        parsed = [f.strip() for f in self.fields.split(",") if f.strip()]
+        if "uuid" not in parsed:
+            parsed.append("uuid")
+        return parsed
+
+
+class SenotypesListParams(SenotypeFieldsParams):
+    """Query params for the list-style senotype endpoints (adds pagination)."""
+
+    limit: int = Field(default=DEFAULT_SENOTYPES_LIMIT, ge=1, le=MAX_SENOTYPES_LIMIT)
+    offset: int = Field(default=0, ge=0)
+    order: Literal["asc", "desc"] = "asc"
+
+    @property
+    def pagination(self) -> dict:
+        return {"limit": self.limit, "offset": self.offset, "order": self.order}
 
 
 @senotypes_bp.route("/senotypes", methods=["GET"])
 @require_any_senotype_group(ALL_SENOTYPE_GROUPS)
-def get_senotypes():
-    try:
-        limit = int(request.args.get("limit", DEFAULT_SENOTYPES_LIMIT))
-        offset = int(request.args.get("offset", 0))
-    except ValueError:
-        return {"message": "limit and offset must be integers"}, 400
-
-    order = request.args.get("order", "asc")
-
-    if limit < 1 or limit > MAX_SENOTYPES_LIMIT:
-        return {"message": f"limit must be between 1 and {MAX_SENOTYPES_LIMIT}"}, 400
-    if offset < 0:
-        return {"message": "offset must be non-negative"}, 400
-    if order not in VALID_SENOTYPES_ORDERS:
-        return {"message": f"order must be one of: {', '.join(VALID_SENOTYPES_ORDERS)}"}, 400
-
-    fields, err = _parse_fields_param()
-    if err:
-        return err
-
-    senotypes, total = find_senotypes(limit=limit, offset=offset, order=order, fields=fields)
+@validate_query_params(SenotypesListParams)
+def get_senotypes(query_params: SenotypesListParams):
+    senotypes, total = find_senotypes(fields=query_params.fields_list, **query_params.pagination)
     return {
         "senotypes": senotypes,
         "pagination": {
             "total": total,
-            "limit": limit,
-            "offset": offset,
-            "order": order,
+            **query_params.pagination,
+        },
+    }, 200
+
+
+@senotypes_bp.route("/senotypes/datasets/<string:dataset_uuid>", methods=["GET"])
+@require_any_senotype_group(ALL_SENOTYPE_GROUPS)
+@validate_query_params(SenotypesListParams)
+def get_senotypes_by_dataset(dataset_uuid: str, query_params: SenotypesListParams):
+    senotypes, total = find_senotypes_by_dataset(
+        dataset_uuid, fields=query_params.fields_list, **query_params.pagination
+    )
+    return {
+        "senotypes": senotypes,
+        "pagination": {
+            "total": total,
+            **query_params.pagination,
         },
     }, 200
 
 
 @senotypes_bp.route("/senotypes/<string:uuid>", methods=["GET"])
 @require_any_senotype_group(ALL_SENOTYPE_GROUPS)
-def get_senotype(uuid: str):
-    fields, err = _parse_fields_param()
-    if err:
-        return err
-
+@validate_query_params(SenotypeFieldsParams)
+def get_senotype(uuid: str, query_params: SenotypeFieldsParams):
     # Check if senotype exists
-    senotype = find_senotype(uuid, fields=fields)
+    senotype = find_senotype(uuid, fields=query_params.fields_list)
     if senotype is None:
         return {"message": "Senotype not found"}, 404
 
