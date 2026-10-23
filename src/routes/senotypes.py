@@ -1,8 +1,9 @@
+import re
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Annotated, Literal
 
 from flask import Blueprint, current_app, request
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator
 
 from common.context import get_search_api_service, get_uuid_api_service
 from common.database.senotypes import delete_senotype as delete_db_senotype
@@ -28,6 +29,16 @@ senotypes_bp = Blueprint("senotypes", __name__)
 
 DEFAULT_SENOTYPES_LIMIT = 25
 MAX_SENOTYPES_LIMIT = 100
+UUID_PATTERN = re.compile(r"[0-9a-f]{32}")
+
+
+def _validate_uuid(v: str) -> str:
+    if not UUID_PATTERN.fullmatch(v):
+        raise ValueError("must be a 32-character lowercase hexadecimal UUID")
+    return v
+
+
+Uuid = Annotated[str, AfterValidator(_validate_uuid)]
 
 SENOTYPE_METADATA_FIELDS = {
     "uuid",
@@ -73,11 +84,15 @@ class SenotypeFieldsParams(BaseModel):
 
 
 class SenotypesListParams(SenotypeFieldsParams):
-    """Query params for the list-style senotype endpoints (adds pagination)."""
+    """Query params for the list-style senotype endpoints. Used for pagination and filtering."""
 
+    # Pagination
     limit: int = Field(default=DEFAULT_SENOTYPES_LIMIT, ge=1, le=MAX_SENOTYPES_LIMIT)
     offset: int = Field(default=0, ge=0)
     order: Literal["asc", "desc"] = "asc"
+
+    # Filtering
+    dataset_uuid: Uuid | None = None
 
     @property
     def pagination(self) -> dict:
@@ -88,23 +103,18 @@ class SenotypesListParams(SenotypeFieldsParams):
 @require_any_senotype_group(ALL_SENOTYPE_GROUPS)
 @validate_query_params(SenotypesListParams)
 def get_senotypes(query_params: SenotypesListParams):
-    senotypes, total = find_senotypes(fields=query_params.fields_list, **query_params.pagination)
-    return {
-        "senotypes": senotypes,
-        "pagination": {
-            "total": total,
+    if query_params.dataset_uuid:
+        # Filter senotypes by dataset UUID
+        senotypes, total = find_senotypes_by_dataset(
+            query_params.dataset_uuid,
+            fields=query_params.fields_list,
             **query_params.pagination,
-        },
-    }, 200
-
-
-@senotypes_bp.route("/senotypes/datasets/<string:dataset_uuid>", methods=["GET"])
-@require_any_senotype_group(ALL_SENOTYPE_GROUPS)
-@validate_query_params(SenotypesListParams)
-def get_senotypes_by_dataset(dataset_uuid: str, query_params: SenotypesListParams):
-    senotypes, total = find_senotypes_by_dataset(
-        dataset_uuid, fields=query_params.fields_list, **query_params.pagination
-    )
+        )
+    else:
+        # Get all senotypes
+        senotypes, total = find_senotypes(
+            fields=query_params.fields_list, **query_params.pagination
+        )
     return {
         "senotypes": senotypes,
         "pagination": {
