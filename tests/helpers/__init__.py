@@ -1,8 +1,18 @@
 import os
+from unittest.mock import Mock
 
 import pytest
 
 from main import create_app
+
+
+def mock_senotype_auth(monkeypatch, token_data=None):
+    ingest_service = Mock()
+    ingest_service.get_senotype_privs.return_value = {"has_senotype_publish": True}
+    if token_data is not None:
+        ingest_service.get_token_info.return_value = token_data
+    monkeypatch.setattr("common.decorator.get_ingest_api_service", lambda: ingest_service)
+    return ingest_service
 
 
 @pytest.fixture()

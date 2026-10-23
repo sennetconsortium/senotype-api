@@ -1,12 +1,6 @@
-from types import SimpleNamespace
 from uuid import uuid4
 
-
-def _authorize_senotype_reads(monkeypatch):
-    ingest_service = SimpleNamespace(
-        get_senotype_privs=lambda token: {"has_senotype_publish": True}
-    )
-    monkeypatch.setattr("common.decorator.get_ingest_api_service", lambda: ingest_service)
+from tests.helpers import mock_senotype_auth
 
 
 def test_get_senotype(app, database, monkeypatch):
@@ -14,7 +8,7 @@ def test_get_senotype(app, database, monkeypatch):
     senotype = {"uuid": uuid4().hex, "title": "Example"}
     collection = database["sennet"]["senotypes"]
     collection.insert_one(dict(senotype))
-    _authorize_senotype_reads(monkeypatch)
+    mock_senotype_auth(monkeypatch)
 
     try:
         with app.test_client() as client:
@@ -32,7 +26,7 @@ def test_get_senotype(app, database, monkeypatch):
 def test_get_missing_senotype(app, monkeypatch):
     # Use a UUID that does not exist in the database
     uuid = uuid4().hex
-    _authorize_senotype_reads(monkeypatch)
+    mock_senotype_auth(monkeypatch)
 
     with app.test_client() as client:
         res = client.get(
@@ -60,7 +54,7 @@ def test_get_senotypes_returns_results(app, database, monkeypatch):
     ]
     collection = database["sennet"]["senotypes"]
     collection.insert_many([dict(senotype) for senotype in senotypes])
-    _authorize_senotype_reads(monkeypatch)
+    mock_senotype_auth(monkeypatch)
 
     try:
         with app.test_client() as client:
@@ -80,7 +74,7 @@ def test_get_senotypes_returns_results(app, database, monkeypatch):
 
 def test_get_senotypes_returns_no_results(app, monkeypatch):
     dataset_uuid = uuid4().hex
-    _authorize_senotype_reads(monkeypatch)
+    mock_senotype_auth(monkeypatch)
 
     with app.test_client() as client:
         res = client.get(
@@ -105,7 +99,7 @@ def test_get_senotypes_filters_by_dataset(app, database, monkeypatch):
     ]
     collection = database["sennet"]["senotypes"]
     collection.insert_many([dict(senotype) for senotype in senotypes])
-    _authorize_senotype_reads(monkeypatch)
+    mock_senotype_auth(monkeypatch)
 
     try:
         with app.test_client() as client:
@@ -132,7 +126,7 @@ def test_get_senotypes_paginates_results(app, database, monkeypatch):
     ]
     collection = database["sennet"]["senotypes"]
     collection.insert_many([dict(senotype) for senotype in senotypes])
-    _authorize_senotype_reads(monkeypatch)
+    mock_senotype_auth(monkeypatch)
 
     try:
         with app.test_client() as client:
