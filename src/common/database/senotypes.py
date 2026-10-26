@@ -33,6 +33,29 @@ def find_senotypes(
     return docs, total
 
 
+def find_senotypes_by_dataset(
+    dataset_uuid: str,
+    limit: int | None = None,
+    offset: int = 0,
+    order: str = "asc",
+    fields: list[str] | None = None,
+) -> tuple[list[dict], int]:
+    collection = get_collection("senotypes")
+    query = {"dataset.uuid": dataset_uuid}
+    total = collection.count_documents(query)
+
+    direction = pymongo.ASCENDING if order == "asc" else pymongo.DESCENDING
+    cursor = (
+        collection.find(query, _build_projection(fields))
+        .sort([("created_timestamp", direction), ("uuid", direction)])
+        .skip(offset)
+    )
+    if limit is not None:
+        cursor = cursor.limit(limit)
+    docs = [doc for doc in cursor]
+    return docs, total
+
+
 def find_senotype(uuid: str, fields: list[str] | None = None) -> dict | None:
     collection = get_collection("senotypes")
     doc = collection.find_one({"uuid": uuid}, _build_projection(fields))

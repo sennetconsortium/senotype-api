@@ -48,9 +48,21 @@ paths:
       description: >
         Requires the authenticated user to be a member of at least one of the
         `senotype-curate`, `senotype-edit`, or `senotype-publish` Globus groups.
+        Use the `dataset_uuid` query parameter to filter results to
+        senotypes associated with a specific dataset.
       security:
         - bearerAuth: []
       parameters:
+        - name: dataset_uuid
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Uuid"
+          example: 41cccc9525c31c925cd996e2cc8af9f2
+          description: >
+            UUID of a dataset. When provided, only senotypes associated with
+            that dataset are returned. An unknown dataset UUID, or one with no
+            associated senotypes, returns an empty list.
         - name: limit
           in: query
           required: false
@@ -94,7 +106,7 @@ paths:
                   pagination:
                     $ref: "#/components/schemas/Pagination"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -172,9 +184,8 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            pattern: "^[a-f0-9]{32}$"
-            example: 73df6847495fcd61e4b6e5292ab2c9dc
+            $ref: "#/components/schemas/Uuid"
+          example: 73df6847495fcd61e4b6e5292ab2c9dc
         - $ref: "#/components/parameters/FieldsParam"
       responses:
         "200":
@@ -187,7 +198,7 @@ paths:
                   senotype:
                     type: object
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -213,9 +224,8 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            pattern: "^[a-f0-9]{32}$"
-            example: 73df6847495fcd61e4b6e5292ab2c9dc
+            $ref: "#/components/schemas/Uuid"
+          example: 73df6847495fcd61e4b6e5292ab2c9dc
         - name: return_dict
           in: query
           required: false
@@ -279,9 +289,8 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            pattern: "^[a-f0-9]{32}$"
-            example: 73df6847495fcd61e4b6e5292ab2c9dc
+            $ref: "#/components/schemas/Uuid"
+          example: 73df6847495fcd61e4b6e5292ab2c9dc
       responses:
         "200":
           description: Senotype deleted successfully
@@ -420,6 +429,12 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
 
   schemas:
+    Uuid:
+      type: string
+      pattern: "^[a-f0-9]{32}$"
+      description: 32-character lowercase hexadecimal UUID
+      example: 73df6847495fcd61e4b6e5292ab2c9dc
+
     ErrorResponse:
       type: object
       properties:
@@ -650,8 +665,8 @@ components:
           nullable: true
           items:
             oneOf:
-              - type: string
-                pattern: "^[a-f0-9]{32}$"
+              - allOf:
+                  - $ref: "#/components/schemas/Uuid"
                 description: Dataset UUID
               - type: string
                 pattern: '^SNT\d{3}\.[A-Z]{4}\.\d{3}$'

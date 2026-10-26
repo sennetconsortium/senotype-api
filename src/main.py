@@ -65,7 +65,12 @@ def create_app() -> Flask:
         instance_path=os.path.abspath(os.path.join(os.path.dirname(__file__), "instance")),
         instance_relative_config=True,
     )
-    app.config.from_pyfile("app.cfg")
+    config_file = os.environ.get("SENOTYPE_CONFIG_FILE")
+    if config_file:
+        config_file = os.path.abspath(config_file)
+    else:
+        config_file = os.path.join(app.instance_path, "app.cfg")
+    app.config.from_pyfile(config_file)
     config = AppConfig.model_validate(dict(app.config))
     configure_logger(app)
     configure_services(app, config)
