@@ -25,6 +25,11 @@ jobs:
           - 27017:27017
         env:
           MONGO_INITDB_DATABASE: sennet
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
 
     steps:
       - name: Checkout
