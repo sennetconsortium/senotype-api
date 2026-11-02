@@ -24,7 +24,7 @@ jobs:
 
       - name: Start MongoDB
         run: |
-          docker run -d --name mongodb -p 27017:27017 mongo:8
+          docker run -d --name mongodb -p 27017:27017 mongo:8.0.30
           for i in $(seq 1 30); do
             if docker exec mongodb mongosh --quiet --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
               echo "MongoDB is ready"
